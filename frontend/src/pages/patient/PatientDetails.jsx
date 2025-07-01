@@ -153,15 +153,14 @@ export default function PatientDetails() {
               <AlertTitle className="text-sm font-semibold text-indigo-800 mb-1">
                 Historique Mode Active
               </AlertTitle>
-              <AlertDescription className="text-sm text-indigo-700">
-                Consultation seule - modifications désactivées (
+              <AlertDescription className="text-sm text-gray-700">
+                <span>Consultation seule - modifications désactivées </span>
                 <span
                   onClick={handleHistoriqueClick}
                   className="text-red-500 cursor-pointer hover:underline"
                 >
                   restaurer
                 </span>
-                )
               </AlertDescription>
             </Alert>
           </motion.div>

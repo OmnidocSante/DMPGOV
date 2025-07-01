@@ -152,14 +152,13 @@ export default function ToleranceDetails() {
                 Historique Mode Active
               </AlertTitle>
               <AlertDescription className="text-sm text-gray-700">
-                Consultation seule - modifications désactivées (
+                <span>Consultation seule - modifications désactivées </span>
                 <span
                   onClick={handleHistoriqueClick}
                   className="text-red-500 cursor-pointer hover:underline"
                 >
                   restaurer
                 </span>
-                )
               </AlertDescription>
             </Alert>
           </motion.div>

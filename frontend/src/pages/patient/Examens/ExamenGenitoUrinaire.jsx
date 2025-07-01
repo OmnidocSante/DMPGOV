@@ -159,15 +159,14 @@ export default function ExamenGenitoUrinaire() {
               <AlertTitle className="text-sm font-semibold text-purple-800 mb-1">
                 Historique Mode Active
               </AlertTitle>
-              <AlertDescription className="text-sm text-purple-700">
-                Consultation seule - modifications désactivées (
+              <AlertDescription className="text-sm text-gray-700">
+                <span>Consultation seule - modifications désactivées </span>
                 <span
                   onClick={handleHistoriqueClick}
                   className="text-red-500 cursor-pointer hover:underline"
                 >
                   restaurer
                 </span>
-                )
               </AlertDescription>
             </Alert>
           </motion.div>
