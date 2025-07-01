@@ -33,6 +33,8 @@ export default function Login() {
   const navigate = useNavigate();
 
   const rootUrl = import.meta.env.VITE_API_BASE_URL || "http://localhost:4000";
+  console.log(rootUrl);
+  
 
   const onSubmit = async (data) => {
     try {
