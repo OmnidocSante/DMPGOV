@@ -31,8 +31,8 @@ import {
   Title,
   Tooltip,
   Legend,
-} from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+} from "chart.js";
+import { Bar, Doughnut } from "react-chartjs-2";
 ChartJS.register(
   CategoryScale,
   LinearScale,
@@ -148,7 +148,6 @@ const useRdv = () => {
       setLoading(true);
       const response = await instance.get("/api/rdv/all");
       console.log(response.data);
-      
 
       setRdvs(response.data);
     } catch (err) {
@@ -191,7 +190,7 @@ export default function AdminDashboard() {
 
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [patientSearchTerm, setPatientSearchTerm] = useState("");
-    const [selectedCity, setSelectedCity] = useState("ALL");
+  const [selectedCity, setSelectedCity] = useState("ALL");
 
   const handleCreateRdv = async () => {
     try {
@@ -215,32 +214,33 @@ export default function AdminDashboard() {
 
   const { rdvs, loading: rdvsLoading, error: rdvsError, fetchRdvs } = useRdv();
 
-
-   const prepareChartData = () => {
-   
-    const patients = users.filter(user => user.role === "PATIENT");
+  const prepareChartData = () => {
+    const patients = users.filter((user) => user.role === "PATIENT");
     console.log(patients);
-    
-    const doctors = users.filter(user => user.role === "MEDECIN");
-    
+
+    const doctors = users.filter((user) => user.role === "MEDECIN");
+
     // Prepare cities for filter
     const cities = Array.from(
-      new Set(patients.map(j => j.ville).filter(Boolean)
-    ));
-    
-    
-    // Filter jockeys by selected city
-    const filteredJockeys = selectedCity === "ALL"
-      ? patients
-      : patients.filter(j => j.ville === selectedCity);
+      new Set(patients.map((j) => j.ville).filter(Boolean))
+    );
 
-      console.log(filteredJockeys);
-      
-    
+    // Filter jockeys by selected city
+    const filteredJockeys =
+      selectedCity === "ALL"
+        ? patients
+        : patients.filter((j) => j.ville === selectedCity);
+
+    console.log(filteredJockeys);
+
     // Calculate jockey aptitude data
-    const aptes = filteredJockeys.filter(j => j.patient.status === "APTE").length;
-    const nonAptes = filteredJockeys.filter(j => j.patient.status !== "APTE").length;
-    
+    const aptes = filteredJockeys.filter(
+      (j) => j.patient.status === "APTE"
+    ).length;
+    const nonAptes = filteredJockeys.filter(
+      (j) => j.patient.status !== "APTE"
+    ).length;
+
     const patientAptitudeData = {
       labels: ["Patients Aptes", "Patients Non Aptes"],
       datasets: [
@@ -252,21 +252,31 @@ export default function AdminDashboard() {
         },
       ],
     };
-    
+
     // Calculate monthly examinations data
     const monthlyLabels = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun", 
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
-    
+
     const monthlyCounts = Array(12).fill(0);
-    rdvs.forEach(rdv => {
+    rdvs.forEach((rdv) => {
       if (["PLANIFIE", "TERMINE"].includes(rdv.statusRDV)) {
         const date = new Date(rdv.dateTime);
         monthlyCounts[date.getMonth()]++;
       }
     });
-    
+
     const monthlyExaminationsData = {
       labels: monthlyLabels,
       datasets: [
@@ -279,7 +289,7 @@ export default function AdminDashboard() {
         },
       ],
     };
-    
+
     // Chart options
     const chartOptions = {
       responsive: true,
@@ -287,25 +297,25 @@ export default function AdminDashboard() {
       plugins: {
         legend: {
           position: "top",
-          labels: { font: { family: "Inter" } }
+          labels: { font: { family: "Inter" } },
         },
         title: {
           display: true,
           font: { size: 16, family: "Inter" },
-          padding: { top: 10, bottom: 10 }
+          padding: { top: 10, bottom: 10 },
         },
         tooltip: {
           bodyFont: { family: "Inter" },
-          titleFont: { family: "Inter" }
-        }
-      }
+          titleFont: { family: "Inter" },
+        },
+      },
     };
-    
+
     return {
       patientAptitudeData,
       monthlyExaminationsData,
       chartOptions,
-      cities
+      cities,
     };
   };
 
@@ -321,14 +331,14 @@ export default function AdminDashboard() {
     user.role === "ADMIN"
       ? [
           { id: "dashboard", name: "Dashboard", icon: BarChart3 },
-          { id: "users", name: "User Management", icon: Users },
+          { id: "users", name: "Gestion des utilisateurs", icon: Users },
           { id: "rdv", name: "Rendez-vous", icon: Calendar },
-          { id: "history", name: "Patient History", icon: History },
+          { id: "history", name: "Historique du patient", icon: History },
         ]
       : user.role === "USER"
       ? [
           { id: "dashboard", name: "Dashboard", icon: BarChart3 },
-          { id: "history", name: "Patient History", icon: History },
+          { id: "history", name: "Historique du patient", icon: History },
         ]
       : [];
 
@@ -452,8 +462,13 @@ export default function AdminDashboard() {
   };
 
   const renderDashboard = () => {
-    const { patientAptitudeData, monthlyExaminationsData, chartOptions, cities } = prepareChartData();
-    
+    const {
+      patientAptitudeData,
+      monthlyExaminationsData,
+      chartOptions,
+      cities,
+    } = prepareChartData();
+
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
@@ -463,8 +478,12 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-sm font-medium text-gray-600">Total Users</p>
-                <p className="text-2xl font-bold text-gray-900">{users.length}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Total des utilisateurs
+                </p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {users.length}
+                </p>
               </div>
               <Users className="h-8 w-8 text-blue-600" />
             </div>
@@ -474,7 +493,9 @@ export default function AdminDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">Total RDVs</p>
-                <p className="text-2xl font-bold text-gray-900">{rdvs.length}</p>
+                <p className="text-2xl font-bold text-gray-900">
+                  {rdvs.length}
+                </p>
               </div>
               <Calendar className="h-8 w-8 text-green-600" />
             </div>
@@ -485,7 +506,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Patients</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.role === "PATIENT").length}
+                  {users.filter((u) => u.role === "PATIENT").length}
                 </p>
               </div>
               <UserCheck className="h-8 w-8 text-purple-600" />
@@ -497,7 +518,7 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Médecins</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {users.filter(u => u.role === "MEDECIN").length}
+                  {users.filter((u) => u.role === "MEDECIN").length}
                 </p>
               </div>
               <Activity className="h-8 w-8 text-red-600" />
@@ -541,7 +562,7 @@ export default function AdminDashboard() {
                 className="w-full p-2 border border-gray-300 rounded-md shadow-sm"
               >
                 <option value="ALL">Toutes les villes</option>
-                {cities.map(city => (
+                {cities.map((city) => (
                   <option key={city} value={city}>
                     {city}
                   </option>
@@ -573,11 +594,12 @@ export default function AdminDashboard() {
     );
   };
 
-
   const renderUserManagement = () => (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Gestion des utilisateurs
+        </h1>
         <button
           onClick={() => {
             resetCreateForm();
@@ -601,7 +623,7 @@ export default function AdminDashboard() {
               <thead className="bg-gray-50">
                 <tr>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Name
+                    Nom
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Email
@@ -610,7 +632,7 @@ export default function AdminDashboard() {
                     Role
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Phone
+                    Numéro de téléphone
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     City
@@ -686,32 +708,35 @@ export default function AdminDashboard() {
       <div className="space-y-6">
         <div className="flex justify-between items-center">
           <h1 className="text-3xl font-bold text-gray-900">
-            Rendez-vous Management
+            Gestion des rendez-vous
           </h1>
+
           <button
             onClick={() => setShowRdvModal(true)}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Create RDV
+            Créer un RDV
           </button>
         </div>
 
         {/* Filter Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Filter Appointments
+            Filtrer les rendez-vous
           </h3>
+
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search by Name */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Search by Patient or Doctor Name
+                Rechercher par nom du patient ou du médecin
               </label>
+
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Enter patient or doctor name..."
+                  placeholder="Entrez le nom du patient ou du médecin..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -723,8 +748,9 @@ export default function AdminDashboard() {
             {/* Filter by Date */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Filter by Date
+                Filtrer par date
               </label>
+
               <input
                 type="date"
                 value={selectedDate}
@@ -743,13 +769,13 @@ export default function AdminDashboard() {
                   onClick={handleSearch}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  Search
+                  Rechercher
                 </button>
                 <button
                   onClick={clearFilters}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
-                  Clear
+                  Effacer
                 </button>
               </div>
             </div>
@@ -757,15 +783,15 @@ export default function AdminDashboard() {
 
           {/* Filter Results Info */}
           <div className="mt-4 text-sm text-gray-600">
-            Showing {filteredRdvs.length} of {rdvs.length} appointments
+            Affichage de {filteredRdvs.length} sur {rdvs.length} rendez-vous
             {searchTerm && (
               <span className="ml-2">
-                • Searching for: "<strong>{searchTerm}</strong>"
+                • Recherche pour : "<strong>{searchTerm}</strong>"
               </span>
             )}
             {selectedDate && (
               <span className="ml-2">
-                • Date:{" "}
+                • Date :{" "}
                 <strong>{new Date(selectedDate).toLocaleDateString()}</strong>
               </span>
             )}
@@ -773,7 +799,7 @@ export default function AdminDashboard() {
         </div>
 
         {rdvsLoading ? (
-          <div className="text-center py-8">Loading RDVs...</div>
+          <div className="text-center py-8">Chargement des RDVs...</div>
         ) : rdvsError ? (
           <div className="text-center py-8 text-red-600">
             Error: {rdvsError}
@@ -785,16 +811,17 @@ export default function AdminDashboard() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date & Time
+                      Date et heure
                     </th>
+
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Patient
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Doctor
+                      Docteur
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      Statut
                     </th>
                   </tr>
                 </thead>
@@ -881,7 +908,7 @@ export default function AdminDashboard() {
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-900">
-                      Create Appointment
+                      Créer un RDV
                     </h2>
                     <button
                       onClick={() => setShowRdvModal(false)}
@@ -903,7 +930,7 @@ export default function AdminDashboard() {
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Select Patient</option>
+                        <option value="">Sélectionner un patient</option>
                         {patients.map((patient) => (
                           <option key={patient.id} value={patient.id}>
                             {patient.prénom} {patient.nom}
@@ -986,8 +1013,9 @@ export default function AdminDashboard() {
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-900">
-                      Update Appointment Status
+                      Mettre à jour le statut du rendez-vous
                     </h2>
+
                     <button
                       onClick={() => {
                         setShowStatusModal(false);
@@ -1004,7 +1032,7 @@ export default function AdminDashboard() {
                     <div className="space-y-4">
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <h3 className="font-medium text-gray-900 mb-2">
-                          Appointment Details
+                          Détails RDV
                         </h3>
                         <p className="text-sm text-gray-600">
                           <strong>Patient:</strong> {selectedRdv.userName}{" "}
@@ -1021,7 +1049,7 @@ export default function AdminDashboard() {
                           {new Date(selectedRdv.dateTime).toLocaleTimeString()}
                         </p>
                         <p className="text-sm text-gray-600">
-                          <strong>Current Status:</strong>{" "}
+                          <strong>Statut actuel :</strong>
                           <span
                             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                               selectedRdv.statusRDV === "PLANIFIE"
@@ -1044,8 +1072,9 @@ export default function AdminDashboard() {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          New Status
+                          Nouveau statut
                         </label>
+
                         <select
                           value={newStatus}
                           onChange={(e) => setNewStatus(e.target.value)}
@@ -1060,23 +1089,24 @@ export default function AdminDashboard() {
 
                       <div className="bg-blue-50 p-3 rounded-lg">
                         <p className="text-sm text-blue-800">
-                          <strong>Status Meanings:</strong>
+                          <strong>Significations des statuts :</strong>
                         </p>
                         <ul className="text-xs text-blue-700 mt-1 space-y-1">
                           <li>
-                            • <strong>PLANIFIE:</strong> Appointment is
-                            scheduled
+                            • <strong>PLANIFIÉ :</strong> Le rendez-vous est
+                            programmé
                           </li>
                           <li>
-                            • <strong>TERMINE:</strong> Appointment completed
-                            successfully
+                            • <strong>TERMINE :</strong> Le rendez-vous s’est
+                            déroulé avec succès
                           </li>
                           <li>
-                            • <strong>ANNULE:</strong> Appointment was cancelled
+                            • <strong>ANNULÉ :</strong> Le rendez-vous a été
+                            annulé
                           </li>
                           <li>
-                            • <strong>PATIENT_ABSENT:</strong> Patient did not
-                            show up
+                            • <strong>PATIENT_ABSENT :</strong> Le patient ne
+                            s’est pas présenté
                           </li>
                         </ul>
                       </div>
@@ -1102,7 +1132,7 @@ export default function AdminDashboard() {
                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      Update Status
+                      Mettre à jour le statut
                     </button>
                   </div>
                 </div>
@@ -1136,8 +1166,9 @@ export default function AdminDashboard() {
           <div className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Search for a patient by name
+                Rechercher un patient par nom
               </label>
+
               <div className="relative">
                 <input
                   type="text"
@@ -1159,8 +1190,9 @@ export default function AdminDashboard() {
             {/* Dropdown Selection */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Or select from dropdown
+                Ou sélectionnez dans la liste déroulante
               </label>
+
               <select
                 value={selectedPatientId}
                 onChange={(e) => {
@@ -1172,7 +1204,7 @@ export default function AdminDashboard() {
                 }}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                <option value="">Select a patient...</option>
+                <option value="">Sélectionnez un patient...</option>
                 {patients.map((patient) => (
                   <option key={patient.id} value={patient.id}>
                     {patient.prénom} {patient.nom} - {patient.email}
@@ -1185,7 +1217,10 @@ export default function AdminDashboard() {
             {patientSearchTerm && (
               <div className="border border-gray-200 rounded-md max-h-48 overflow-y-auto">
                 <div className="p-2">
-                  <p className="text-sm text-gray-600 mb-2">Search Results:</p>
+                  <p className="text-sm text-gray-600 mb-2">
+                    Résultats de la recherche :
+                  </p>
+
                   {patients
                     .filter((patient) =>
                       `${patient.prénom} ${patient.nom}`
@@ -1258,8 +1293,9 @@ export default function AdminDashboard() {
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-200">
               <h3 className="text-lg font-semibold text-gray-900">
-                Patient Status History
+                Historique du statut du patient
               </h3>
+
               <p className="text-sm text-gray-600 mt-1">
                 Showing status history for {selectedPatient?.prénom}{" "}
                 {selectedPatient?.nom}
@@ -1292,13 +1328,13 @@ export default function AdminDashboard() {
                         Date & Time
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Doctor
+                        Médecin
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Patient
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Status
+                        Statut
                       </th>
                     </tr>
                   </thead>
@@ -1392,7 +1428,7 @@ export default function AdminDashboard() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    First Name
+                    Nom
                   </label>
                   <input
                     type="text"
@@ -1406,7 +1442,7 @@ export default function AdminDashboard() {
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Last Name
+                    Prénom
                   </label>
                   <input
                     type="text"
@@ -1587,7 +1623,9 @@ export default function AdminDashboard() {
       <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg ">
         <div className="p-6">
           <h2 className="text-xl font-bold text-gray-900">
-            {user.role === "ADMIN" ? "Admin Panel" : "User Panel"}
+            {user.role === "ADMIN"
+              ? "Panneau d’administration"
+              : "Panneau utilisateur"}
           </h2>
         </div>
         <nav className="mt-6">

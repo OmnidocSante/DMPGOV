@@ -14,7 +14,7 @@ import {
   FolderOpen,
   LogOut,
   Stethoscope,
-  Clock
+  Clock,
 } from "lucide-react";
 import instance from "../auth/AxiosInstance";
 import { useNavigate } from "react-router-dom";
@@ -51,7 +51,7 @@ const useUsers = () => {
   const fetchUsers = async () => {
     try {
       setLoading(true);
-      const response = await instance.get("http://localhost:4000/api/users");
+      const response = await instance.get("/api/users");
       setUsers(response.data);
     } catch (err) {
       console.log(err);
@@ -308,7 +308,9 @@ export default function DoctorDashboard() {
 
     return (
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold text-gray-900">Doctor Dashboard</h1>
+        <h1 className="text-3xl font-bold text-gray-900">
+          Tableau de bord du médecin
+        </h1>
 
         {/* KPI Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -330,7 +332,7 @@ export default function DoctorDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  My Appointments
+                  Mes rendez-vous
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {rdvs.length}
@@ -344,7 +346,7 @@ export default function DoctorDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Today's Appointments
+                  Eendez-vous d'aujourd'hui
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {
@@ -364,7 +366,7 @@ export default function DoctorDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Completed Today
+                  Terminé aujourd'hui
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {
@@ -380,8 +382,6 @@ export default function DoctorDashboard() {
             </div>
           </div>
         </div>
-
-      
 
         {/* Monthly Examinations Chart */}
         <div className="w-full">
@@ -416,31 +416,31 @@ export default function DoctorDashboard() {
     return (
       <div className="space-y-6">
         <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">My Appointments</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Mes rendez-vous</h1>
           <button
             onClick={() => setShowRdvModal(true)}
             className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
           >
             <Plus className="h-4 w-4 mr-2" />
-            Schedule Appointment
+            Créer un RDV
           </button>
         </div>
 
         {/* Filter Section */}
         <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Filter Appointments
+            Filtrer les rendez-vous
           </h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {/* Search by Patient Name */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Search by Patient Name
+                Recherche par nom de patient
               </label>
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Enter patient name..."
+                  placeholder="Entrez nom de patient"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
@@ -452,7 +452,7 @@ export default function DoctorDashboard() {
             {/* Filter by Date */}
             <div className="space-y-2">
               <label className="block text-sm font-medium text-gray-700">
-                Filter by Date
+                Filtrer par date
               </label>
               <input
                 type="date"
@@ -472,13 +472,13 @@ export default function DoctorDashboard() {
                   onClick={handleSearch}
                   className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                 >
-                  Search
+                  Recherche
                 </button>
                 <button
                   onClick={clearFilters}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
-                  Clear
+                  Effacer
                 </button>
               </div>
             </div>
@@ -489,7 +489,7 @@ export default function DoctorDashboard() {
             Showing {filteredRdvs.length} of {rdvs.length} appointments
             {searchTerm && (
               <span className="ml-2">
-                • Searching for: "<strong>{searchTerm}</strong>"
+                • Recherche pour : "<strong>{searchTerm}</strong>"
               </span>
             )}
             {selectedDate && (
@@ -502,7 +502,7 @@ export default function DoctorDashboard() {
         </div>
 
         {rdvsLoading ? (
-          <div className="text-center py-8">Loading appointments...</div>
+          <div className="text-center py-8">Chargement des RDVs...</div>
         ) : rdvsError ? (
           <div className="text-center py-8 text-red-600">
             Error: {rdvsError}
@@ -514,13 +514,13 @@ export default function DoctorDashboard() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date & Time
+                      Date et heure
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Patient
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Status
+                      Statut
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Action
@@ -584,7 +584,7 @@ export default function DoctorDashboard() {
                             className="inline-flex items-center px-3 py-1 bg-green-600 text-white text-sm rounded-md hover:bg-green-700 transition-colors"
                           >
                             <FolderOpen className="h-4 w-4 mr-1" />
-                            See Folder
+                            Voir dossier
                           </button>
                         </td>
                       </tr>
@@ -614,7 +614,7 @@ export default function DoctorDashboard() {
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-900">
-                      Schedule Appointment
+                      Créer un RDV
                     </h2>
                     <button
                       onClick={() => setShowRdvModal(false)}
@@ -636,7 +636,7 @@ export default function DoctorDashboard() {
                         }
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
-                        <option value="">Select Patient</option>
+                        <option value="">Sélectionner Patient</option>
                         {patients.map((patient) => (
                           <option key={patient.id} value={patient.id}>
                             {patient.prénom} {patient.nom}
@@ -699,7 +699,7 @@ export default function DoctorDashboard() {
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-900">
-                      Update Appointment Status
+                      Mettre à jour le statut du RDV
                     </h2>
                     <button
                       onClick={() => {
@@ -717,7 +717,7 @@ export default function DoctorDashboard() {
                     <div className="space-y-4">
                       <div className="bg-gray-50 p-4 rounded-lg">
                         <h3 className="font-medium text-gray-900 mb-2">
-                          Appointment Details
+                          Détails RDV
                         </h3>
                         <p className="text-sm text-gray-600">
                           <strong>Patient:</strong> {selectedRdv.userName}{" "}
@@ -730,7 +730,7 @@ export default function DoctorDashboard() {
                           {new Date(selectedRdv.dateTime).toLocaleTimeString()}
                         </p>
                         <p className="text-sm text-gray-600">
-                          <strong>Current Status:</strong>{" "}
+                          <strong>Statut actuel :</strong>
                           <span
                             className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
                               selectedRdv.statusRDV === "PLANIFIE"
@@ -753,7 +753,7 @@ export default function DoctorDashboard() {
 
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
-                          New Status
+                          Nouveau statut
                         </label>
                         <select
                           value={newStatus}
@@ -769,23 +769,24 @@ export default function DoctorDashboard() {
 
                       <div className="bg-blue-50 p-3 rounded-lg">
                         <p className="text-sm text-blue-800">
-                          <strong>Status Meanings:</strong>
+                          <strong>Significations des statuts :</strong>
                         </p>
                         <ul className="text-xs text-blue-700 mt-1 space-y-1">
                           <li>
-                            • <strong>PLANIFIE:</strong> Appointment is
-                            scheduled
+                            • <strong>PLANIFIÉ :</strong> Le rendez-vous est
+                            programmé
                           </li>
                           <li>
-                            • <strong>TERMINE:</strong> Appointment completed
-                            successfully
+                            • <strong>TERMINE :</strong> Le rendez-vous s’est
+                            déroulé avec succès
                           </li>
                           <li>
-                            • <strong>ANNULE:</strong> Appointment was cancelled
+                            • <strong>ANNULÉ :</strong> Le rendez-vous a été
+                            annulé
                           </li>
                           <li>
-                            • <strong>PATIENT_ABSENT:</strong> Patient did not
-                            show up
+                            • <strong>PATIENT_ABSENT :</strong> Le patient ne
+                            s’est pas présenté
                           </li>
                         </ul>
                       </div>
@@ -811,7 +812,7 @@ export default function DoctorDashboard() {
                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      Update Status
+                      Mettre à jour le statut
                     </button>
                   </div>
                 </div>
@@ -828,7 +829,7 @@ export default function DoctorDashboard() {
       {/* Sidebar */}
       <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg ">
         <div className="p-6">
-          <h2 className="text-xl font-bold text-gray-900">Doctor Panel</h2>
+          <h2 className="text-xl font-bold text-gray-900">Panel Médecin</h2>
         </div>
         <nav className="mt-6">
           {navigation.map((item) => (
