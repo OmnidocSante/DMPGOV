@@ -1,0 +1,88 @@
+export const STATUS_RDV = {
+  PLANIFIE: "PLANIFIE",
+  TERMINE: "TERMINE",
+  ANNULE: "ANNULE",
+  PATIENT_ABSENT: "PATIENT_ABSENT",
+};
+
+export const VILLES = [
+  { label: "Casablanca", value: "CASABLANCA" },
+  { label: "Rabat", value: "RABAT" },
+  { label: "Fès", value: "FES" },
+  { label: "Marrakech", value: "MARRAKECH" },
+  { label: "Tangier", value: "TANGIER" },
+  { label: "Agadir", value: "AGADIR" },
+  { label: "Meknès", value: "MEKNES" },
+  { label: "Oujda", value: "OUJDA" },
+  { label: "Kénitra", value: "KENITRA" },
+  { label: "Tétouan", value: "TETOUAN" },
+  { label: "Safi", value: "SAFI" },
+  { label: "Temara", value: "TEMARA" },
+  { label: "Mohammedia", value: "MOHAMMEDIA" },
+  { label: "Khouribga", value: "KHOURIBGA" },
+  { label: "El Jadida", value: "EL_JADIDA" },
+  { label: "Berrechid", value: "BERRCHID" },
+  { label: "Taza", value: "TAZA" },
+  { label: "Nador", value: "NADOR" },
+  { label: "Khemisset", value: "KHEMISSET" },
+  { label: "Settat", value: "SETTAT" },
+  { label: "Khemis Zemamra", value: "KHEMIS_ZEMAMRA" },
+  { label: "Larache", value: "LARACHE" },
+  { label: "Boujdour", value: "BOUJDOUR" },
+  { label: "Beni Mellal", value: "BENI_MELLAL" },
+  { label: "Tiflet", value: "TIFLET" },
+  { label: "Errachidia", value: "ERRACHIDIA" },
+  { label: "Ifrane", value: "IFRANE" },
+  { label: "Midelt", value: "MIDELT" },
+  { label: "Taroudant", value: "TAROUDANT" },
+  { label: "Tinghir", value: "TINGHIR" },
+  { label: "Zagora", value: "ZAGORA" },
+  { label: "Tan-Tan", value: "TAN_TAN" },
+  { label: "Laâyoune", value: "LAAYOUNE" },
+  { label: "Dakhla", value: "DAKHLA" },
+  { label: "Guelmim", value: "GUELMIM" },
+  { label: "Sidi Ifni", value: "SIDI_IFNI" },
+  { label: "Azilal", value: "AZILAL" },
+  { label: "Ouled Teima", value: "OULED_TEIMA" },
+  { label: "Aït Melloul", value: "AIT_MELLOUL" },
+  { label: "Sidi Bennour", value: "SIDI_BENNOUR" },
+  { label: "Skhirat", value: "SKHIRAT" },
+  { label: "Youssoufia", value: "YOUSSOFIA" },
+  { label: "Chefchaouen", value: "CHEFCHAOUEN" },
+  { label: "Sidi Kacem", value: "SIDI_KACEM" },
+  { label: "Taounate", value: "TAOUNATE" },
+  { label: "Berkane", value: "BERKANE" },
+  { label: "Jerada", value: "JERADA" },
+  { label: "Fnideq", value: "FNIDEQ" },
+  { label: "Driouch", value: "DRIOUCH" },
+  { label: "Sefrou", value: "SEFROU" },
+  { label: "Taourirt", value: "TAOURIRT" },
+  { label: "Kasba Tadla", value: "KASBA_TADLA" },
+  { label: "Sidi Slimane", value: "SIDI_SLIMANE" },
+  { label: "Al Hoceima", value: "AL_HOCEIMA" },
+];
+
+export const Status = [
+  { label: "APTE", value: "Apte" },
+  { label: "INAPTE_TEMPORAIRE", value: "Inapte Temporaire" },
+  { label: "A_RECLASSER", value: "À Reclasser" },
+  { label: "INAPTE_DEFINITIF", value: "Inapte Définitif" },
+];
+
+export const TypeVaccinationOptions = [
+  { value: "Variole", label: "Variole" },
+  { value: "Diphterie", label: "Diphtérie" },
+  { value: "tetanos", label: "Tétanos" },
+  { value: "TAB", label: "TAB" },
+  { value: "TRIPLE", label: "TRIPLE" },
+  { value: "DIVERSES", label: "Diverses" },
+  { value: "TEST_TUBERCULINIQUE", label: "Test Tuberculinique" },
+];
+
+export const planMedicalOptions = [
+  { label: "Normal", value: "NORMAL" },
+  { label: "Affection Congénitable", value: "AFFECTION_CONGENITABLE" },
+  { label: "Affection Acquise", value: "AFFECTION_ACQUISE" },
+  { label: "Affection Découverte", value: "AFFECTION_DECOUVERTE" }
+];
+
