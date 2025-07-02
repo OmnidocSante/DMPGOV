@@ -50,7 +50,6 @@ public class UserService {
     }
 
 
-
     public User saveUser(User user) throws Exception {
         if (userRepo.existsByEmail(user.getEmail())) {
             throw new ApiException("Cet email est déjà utilisé");
@@ -63,37 +62,41 @@ public class UserService {
         if (userRepo.existsByTelephone(user.getTelephone())) {
             throw new ApiException("Ce numéro de téléphone est déjà associé à un compte");
         }
+
         if (userRepo.existsByNomAndPrénom(user.getNom(), user.getPrénom())) {
             throw new ApiException("Un compte avec ce nom et prénom est déjà enregistré");
         }
 
         String rawPasswordCreationToken = UUID.randomUUID().toString();
-
         String encryptedToken = HmacUtil.hmac(rawPasswordCreationToken);
 
         user.setPasswordCreationToken(encryptedToken);
         user.setDateEntree(new Date());
 
-        User createdUser = userRepo.save(user);
+        User createdUser = userRepo.save(user); // This now has an ID!
 
         String subject = "Création de votre mot de passe";
-        String body = "Bonjour,\n\n" + "Un compte vient d'être créé pour vous sur notre plateforme.\n" + "Veuillez cliquer sur le lien suivant pour définir votre mot de passe :\n\n" + "http://localhost:5173/create-password?token=" + rawPasswordCreationToken + "\n\n";
+        String body = "Bonjour,\n\n" +
+                "Un compte vient d'être créé pour vous sur notre plateforme.\n" +
+                "Veuillez cliquer sur le lien suivant pour définir votre mot de passe :\n\n" +
+                "http://localhost:5173/create-password?token=" + rawPasswordCreationToken + "\n\n";
 
         emailService.sendEmail(user.getEmail(), subject, body);
 
         if (user.getRole() == Role.PATIENT) {
             dossierMedicaleUtil.createDossier(createdUser);
-
         } else if (user.getRole() == Role.MEDECIN) {
-            medecinRepo.save(new Medecin(createdUser));
+            Medecin medecin = medecinRepo.save(new Medecin(createdUser));
         }
-        return user;
+
+        return createdUser;
     }
 
     public void deleteUser(Long id) {
         userRepository.deleteById(id);
     }
-    public void deleteDossier(Long id ){
+
+    public void deleteDossier(Long id) {
         dossierMedicaleRepo.deleteById(id);
     }
 

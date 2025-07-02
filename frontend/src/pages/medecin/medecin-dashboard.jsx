@@ -85,8 +85,26 @@ const useDoctorRdv = () => {
       console.log("Doctor appointments:", response.data);
       setRdvs(response.data);
     } catch (err) {
-      console.error("Error fetching doctor appointments:", err);
-      setError(err.message);
+      if (err.response) {
+        const errorData = err.response.data;
+
+        if (errorData.errors) {
+          const errorMessages = Object.values(errorData.errors).join(" | ");
+          setError(errorMessages);
+        } else if (errorData.message) {
+          setError(errorData.message);
+        } else {
+          setError("Une erreur inconnue est survenue.");
+        }
+
+        console.error("Erreur côté serveur:", errorData);
+      } else if (err.request) {
+        setError("Le serveur ne répond pas. Veuillez réessayer plus tard.");
+        console.error("Pas de réponse du serveur:", err.request);
+      } else {
+        setError("Erreur inattendue: " + err.message);
+        console.error("Erreur inattendue:", err);
+      }
     } finally {
       setLoading(false);
     }
@@ -101,8 +119,30 @@ const useDoctorRdv = () => {
       await fetchRdvs();
       return true;
     } catch (err) {
-      console.error("Error creating RDV:", err);
-      setError(err.message);
+      if (err.response) {
+        // Backend responded with an error status (e.g., 400, 500)
+        const errorData = err.response.data;
+
+        // Try to extract specific validation messages if available
+        if (errorData.errors) {
+          const errorMessages = Object.values(errorData.errors).join(" | ");
+          setError(errorMessages);
+        } else if (errorData.message) {
+          setError(errorData.message);
+        } else {
+          setError("Une erreur inconnue est survenue.");
+        }
+
+        console.error("Erreur côté serveur:", errorData);
+      } else if (err.request) {
+        // Request made but no response received
+        setError("Le serveur ne répond pas. Veuillez réessayer plus tard.");
+        console.error("Pas de réponse du serveur:", err.request);
+      } else {
+        // Other errors (like bad config)
+        setError("Erreur inattendue: " + err.message);
+        console.error("Erreur inattendue:", err);
+      }
       return false;
     }
   };
@@ -113,9 +153,30 @@ const useDoctorRdv = () => {
       await fetchRdvs();
       return true;
     } catch (err) {
-      console.error("Error updating RDV status:", err);
-      setError(err.message);
-      return false;
+      if (err.response) {
+        // Backend responded with an error status (e.g., 400, 500)
+        const errorData = err.response.data;
+
+        // Try to extract specific validation messages if available
+        if (errorData.errors) {
+          const errorMessages = Object.values(errorData.errors).join(" | ");
+          setError(errorMessages);
+        } else if (errorData.message) {
+          setError(errorData.message);
+        } else {
+          setError("Une erreur inconnue est survenue.");
+        }
+
+        console.error("Erreur côté serveur:", errorData);
+      } else if (err.request) {
+        // Request made but no response received
+        setError("Le serveur ne répond pas. Veuillez réessayer plus tard.");
+        console.error("Pas de réponse du serveur:", err.request);
+      } else {
+        // Other errors (like bad config)
+        setError("Erreur inattendue: " + err.message);
+        console.error("Erreur inattendue:", err);
+      }
     }
   };
 

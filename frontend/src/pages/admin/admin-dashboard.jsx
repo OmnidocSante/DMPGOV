@@ -87,6 +87,8 @@ const useUsers = () => {
 
   const createUser = async (userData) => {
     try {
+      console.log(userData);
+
       const response = await instance.post("/api/users", userData);
       if (response.data) {
         await fetchUsers();
@@ -377,7 +379,10 @@ export default function AdminDashboard() {
     }
   };
 
+  console.log(editForm);
+
   const handleCreateUser = async () => {
+    
     const success = await createUser(editForm);
     if (success) {
       setShowCreateModal(false);
@@ -1539,8 +1544,12 @@ export default function AdminDashboard() {
                     value={editForm.ville || ""}
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
+                    <option value="">-- Sélectionner une ville --</option>
+
                     {VILLES.map((ville) => (
-                      <option value={ville.value}>{ville.label}</option>
+                      <option key={ville.value} value={ville.value}>
+                        {ville.label}
+                      </option>
                     ))}
                   </select>
                 </div>
@@ -1563,12 +1572,15 @@ export default function AdminDashboard() {
                     Role
                   </label>
                   <select
-                    value={editForm.role || "PATIENT"}
+                    value={editForm.role || ""}
                     onChange={(e) =>
                       setEditForm({ ...editForm, role: e.target.value })
                     }
                     className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                   >
+                    {/* Optional: Default prompt option */}
+                    <option value="">-- Sélectionner un rôle --</option>
+
                     <option value="ADMIN">admin</option>
                     <option value="MEDECIN">docteur</option>
                     <option value="PATIENT">patient</option>

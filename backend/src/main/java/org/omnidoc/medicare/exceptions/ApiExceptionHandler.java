@@ -2,6 +2,7 @@ package org.omnidoc.medicare.exceptions;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
@@ -30,6 +31,22 @@ public class ApiExceptionHandler {
         errorResponse.put("timestamp", LocalDateTime.now().toString());
         return new ResponseEntity<>(errorResponse, HttpStatus.CONFLICT);
     }
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<Map<String, Object>> handleValidationException(MethodArgumentNotValidException ex) {
+        Map<String, String> validationErrors = new HashMap<>();
+        ex.getBindingResult().getFieldErrors().forEach(error -> {
+            validationErrors.put(error.getField(), error.getDefaultMessage());
+        });
+
+        Map<String, Object> errorResponse = new HashMap<>();
+        errorResponse.put("message", "Validation failed");
+        errorResponse.put("errors", validationErrors);
+        errorResponse.put("status", HttpStatus.BAD_REQUEST.toString());
+        errorResponse.put("timestamp", LocalDateTime.now().toString());
+
+        return new ResponseEntity<>(errorResponse, HttpStatus.BAD_REQUEST);
+    }
+
 
 
 }

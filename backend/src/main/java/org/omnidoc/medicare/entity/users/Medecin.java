@@ -36,5 +36,6 @@ public class Medecin {
     private List<Rdv> rdvs;
 
     public Medecin(User createdUser) {
+        this.user = createdUser;
     }
 }
