@@ -208,7 +208,7 @@ export default function App() {
                 <Button
                   size="lg"
                   className="text-lg bg-black text-white cursor-pointer px-8 py-3"
-                  onClick={()=>navigate("/login")}
+                  onClick={() => navigate("/login")}
                 >
                   Accéder au portail
                   <ChevronRight className="ml-2 h-5 w-5" />
@@ -474,7 +474,7 @@ export default function App() {
         <div className="container mx-auto px-4 sm:px-6 py-8 lg:px-8">
           <div>
             <p className="text-gray-400 text-sm">
-              © 2025 Omnidoc ( 1.0.1 ) Tous droits réservés.
+              © 2025 Omnidoc ( 1.0.2 ) Tous droits réservés.
             </p>
           </div>
         </div>

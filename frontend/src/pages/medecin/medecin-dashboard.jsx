@@ -408,7 +408,7 @@ export default function DoctorDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-gray-600">
-                  Eendez-vous d'aujourd'hui
+                  Rendez-vous d'aujourd'hui
                 </p>
                 <p className="text-2xl font-bold text-gray-900">
                   {
