@@ -110,42 +110,45 @@ const useDoctorRdv = () => {
     }
   };
 
-  const createRdv = async (rdvData) => {
-    try {
-      const response = await instance.post(
-        "/api/rdv/create-by-doctor",
-        rdvData
-      );
-      await fetchRdvs();
-      return true;
-    } catch (err) {
-      if (err.response) {
-        // Backend responded with an error status (e.g., 400, 500)
-        const errorData = err.response.data;
+ const createRdv = async (rdvData) => {
+  try {
+    const response = await instance.post("/api/rdv/create-by-doctor", rdvData);
+    await fetchRdvs();
+    return true;
+  } catch (err) {
+    if (err.response) {
+      const errorData = err.response.data;
 
-        // Try to extract specific validation messages if available
-        if (errorData.errors) {
-          const errorMessages = Object.values(errorData.errors).join(" | ");
-          setError(errorMessages);
-        } else if (errorData.message) {
-          setError(errorData.message);
-        } else {
-          setError("Une erreur inconnue est survenue.");
-        }
-
-        console.error("Erreur côté serveur:", errorData);
-      } else if (err.request) {
-        // Request made but no response received
-        setError("Le serveur ne répond pas. Veuillez réessayer plus tard.");
-        console.error("Pas de réponse du serveur:", err.request);
+      if (errorData.errors) {
+        const errorMessages = Object.values(errorData.errors).join(" | ");
+        setError(errorMessages);
+      } else if (errorData.message) {
+        setError(errorData.message);
       } else {
-        // Other errors (like bad config)
-        setError("Erreur inattendue: " + err.message);
-        console.error("Erreur inattendue:", err);
+        setError("Une erreur inconnue est survenue.");
       }
-      return false;
+
+      console.error("Erreur côté serveur:", errorData);
+    } else if (err.request) {
+      setError("Le serveur ne répond pas. Veuillez réessayer plus tard.");
+      console.error("Pas de réponse du serveur:", err.request);
+    } else {
+      setError("Erreur inattendue: " + err.message);
+      console.error("Erreur inattendue:", err);
     }
-  };
+
+    // Wait 1 second, then clear error and return true
+    await new Promise((resolve) => {
+      setTimeout(() => {
+        setError("");
+        resolve();
+      }, 1000);
+    });
+
+    return true;
+  }
+};
+
 
   const updateRdvStatus = async (rdvId, status) => {
     try {
@@ -564,10 +567,6 @@ export default function DoctorDashboard() {
 
         {rdvsLoading ? (
           <div className="text-center py-8">Chargement des RDVs...</div>
-        ) : rdvsError ? (
-          <div className="text-center py-8 text-red-600">
-            Error: {rdvsError}
-          </div>
         ) : (
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
             <div className="overflow-x-auto">
@@ -672,6 +671,11 @@ export default function DoctorDashboard() {
                 exit={{ scale: 0.95, opacity: 0 }}
                 className="bg-white rounded-lg shadow-xl max-w-md w-full"
               >
+                {rdvsError && (
+                  <div className="text-center py-8 text-red-600">
+                    Error: {rdvsError}
+                  </div>
+                )}
                 <div className="p-6">
                   <div className="flex justify-between items-center mb-6">
                     <h2 className="text-xl font-bold text-gray-900">
@@ -723,17 +727,17 @@ export default function DoctorDashboard() {
 
                   <div className="flex justify-end space-x-4 mt-6">
                     <button
-                      onClick={() => setShowRdvModal(false)}
+                      onClick={() => {setShowRdvModal(false)}}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                     >
-                      Cancel
+                      Annuler
                     </button>
                     <button
                       onClick={handleCreateRdv}
                       className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
                     >
                       <Save className="h-4 w-4 mr-2" />
-                      Schedule
+                      Plannifier
                     </button>
                   </div>
                 </div>
@@ -863,7 +867,7 @@ export default function DoctorDashboard() {
                       }}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                     >
-                      Cancel
+                      Annuler
                     </button>
                     <button
                       onClick={handleStatusUpdate}
