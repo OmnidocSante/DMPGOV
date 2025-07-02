@@ -98,7 +98,6 @@ export default function PatientTab() {
 
       setStatus(patientData.status);
       setRdv(rdvResponse.data);
-      console.log("rdvResponse", rdvResponse.data);
 
       setValue("teguments", patientData.teguments);
       setValue("taille", patientData.taille);
@@ -170,7 +169,6 @@ export default function PatientTab() {
 
   const [isImageDialogOpen, setIsImageDialogOpen] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
-  console.log(patient);
 
   const handleImageUpload = async () => {
     if (!selectedFile) return;

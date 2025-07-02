@@ -65,7 +65,6 @@ export default function CreatePassword() {
         navigate("/login");
       }, 2000);
     } catch (error) {
-      console.log(error);
 
       setAlertContent({
         title: "Erreur",

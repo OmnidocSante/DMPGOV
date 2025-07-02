@@ -57,7 +57,6 @@ export default function Vaccinations() {
       const response = await instance.get(
         `/api/antecedents-professionnels/patient/${id}/vaccinations`
       );
-      console.log(response.data);
 
       // Map the fetched data to the form structure.
       // Ensure date is in 'yyyy-MM-dd' format for input type="date"

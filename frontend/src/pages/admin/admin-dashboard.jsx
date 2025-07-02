@@ -87,7 +87,6 @@ const useUsers = () => {
 
   const createUser = async (userData) => {
     try {
-      console.log(userData);
 
       const response = await instance.post("/api/users", userData);
       if (response.data) {
@@ -149,7 +148,6 @@ const useRdv = () => {
     try {
       setLoading(true);
       const response = await instance.get("/api/rdv/all");
-      console.log(response.data);
 
       setRdvs(response.data);
     } catch (err) {
@@ -173,7 +171,6 @@ export default function AdminDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({});
-  console.log("edit form", editForm);
 
   const [showRdvModal, setShowRdvModal] = useState(false);
   const [rdvForm, setRdvForm] = useState({
@@ -218,7 +215,6 @@ export default function AdminDashboard() {
 
   const prepareChartData = () => {
     const patients = users.filter((user) => user.role === "PATIENT");
-    console.log(patients);
 
     const doctors = users.filter((user) => user.role === "MEDECIN");
 
@@ -233,7 +229,6 @@ export default function AdminDashboard() {
         ? patients
         : patients.filter((j) => j.ville === selectedCity);
 
-    console.log(filteredJockeys);
 
     // Calculate jockey aptitude data
     const aptes = filteredJockeys.filter(
@@ -361,7 +356,6 @@ export default function AdminDashboard() {
     });
     setShowUserModal(true);
   };
-  console.log(editForm.ville);
 
   const handleSaveUser = async () => {
     if (selectedUser) {
@@ -379,7 +373,6 @@ export default function AdminDashboard() {
     }
   };
 
-  console.log(editForm);
 
   const handleCreateUser = async () => {
     

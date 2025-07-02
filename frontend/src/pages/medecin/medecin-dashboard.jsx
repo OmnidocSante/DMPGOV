@@ -54,7 +54,6 @@ const useUsers = () => {
       const response = await instance.get("/api/users");
       setUsers(response.data);
     } catch (err) {
-      console.log(err);
       setError(err.message);
     } finally {
       setLoading(false);
@@ -82,7 +81,6 @@ const useDoctorRdv = () => {
     try {
       setLoading(true);
       const response = await instance.get("/api/rdv/doctor-appointments");
-      console.log("Doctor appointments:", response.data);
       setRdvs(response.data);
     } catch (err) {
       if (err.response) {

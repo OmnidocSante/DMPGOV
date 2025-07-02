@@ -21,7 +21,6 @@ export default function Serums() {
   const { id } = useParams();
   const [loading, setLoading] = useState(true);
   const [existingSerums, setExistingSerums] = useState([]);
-  console.log(existingSerums);
   
   const [toDelete, setToDelete] = useState([]);
 
@@ -52,7 +51,6 @@ export default function Serums() {
       let response = await instance.get(
         `/api/antecedents-professionnels/patient/${id}/serum`
       );
-      console.log(response.data);
       
 
       setExistingSerums(response.data);

@@ -6,7 +6,6 @@ export default function useToken() {
   });
 
   const setToken = (newToken) => {
-    console.log(newToken);
 
     localStorage.setItem("token", newToken);
     setInternalToken(newToken);

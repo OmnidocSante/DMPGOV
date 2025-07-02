@@ -53,7 +53,6 @@ export default function AntecedentsProfessionnelsDetails() {
     if (!isEditMode || isHistory || !antecedents) return;
 
     try {
-      console.log(antecedents);
 
       if (!antecedents.id) {
         console.error("Dossier ID not found for saving.");
