@@ -62,12 +62,12 @@ export default function PatientTab() {
   const [rdv, setRdv] = useState(null);
 
   const detailsSchema = z.object({
-    teguments: z.string(),
-    taille: z.string(),
-    poids: z.string(),
-    perimetreThoracique: z.string(),
-    atelier: z.string(),
-    entreprise: z.string(),
+    teguments: z.string().nullable(),
+    taille: z.string().nullable(),
+    poids: z.string().nullable(),
+    perimetreThoracique: z.string().nullable(),
+    atelier: z.string().nullable(),
+    entreprise: z.string().nullable(),
   });
 
   const {
@@ -139,7 +139,12 @@ export default function PatientTab() {
   };
 
   const onSubmit = async (data) => {
-    await instance.patch(`/api/patient/${id}`, data);
+    console.log(data);
+
+    await instance.patch(`/api/patient/${id}`, {
+      ...data,
+      planMedical: patient.planMedical,
+    });
     setIsDialogOpen(false);
     fetchData();
   };
