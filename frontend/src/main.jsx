@@ -20,9 +20,7 @@ import Vaccinations from "./pages/patient/Vaccinations";
 import AntecedentsFamiliaux from "./pages/patient/AntecedentsFamiliaux";
 import Examens from "./pages/patient/Examens/examens";
 import ExamenAudioVisuelle from "./pages/patient/Examens/ExamenAudioVisuelle";
-import ExamenRadiologique from "./pages/patient/Examens/ExamenRadiologique";
 import ExamenGenitoUrinaire from "./pages/patient/Examens/ExamenGenitoUrinaire";
-import OrganesSensDetails from "./pages/patient/OrganesDeSens";
 import ToleranceDetails from "./pages/patient/Tolerance";
 import ConclusionDetails from "./pages/patient/Conclusion";
 import MusclesDetails from "./pages/patient/Muscles";
@@ -30,6 +28,8 @@ import PatientDetails from "./pages/patient/PatientDetails";
 import ExamenPsychotechniqueDetails from "./pages/patient/Examens/ExamenPsychoTechnique";
 import ParcoursProfessionnels from "./pages/patient/ParcoursProfessionel";
 import ExamenAbdominaireDetails from "./pages/patient/Examens/ExamenAbdominaire";
+import ExamenRadiologique from "./pages/patient/Examens/ExamenRadiologique";
+import ExamenVasculaire from "./pages/patient/Examens/ExamenVasculaire";
 
 createRoot(document.getElementById("root")).render(
   <StrictMode>
@@ -49,8 +49,14 @@ createRoot(document.getElementById("root")).render(
           <Route Component={DoctorDashboard} path="/medecin" />
           <Route path="/patient/:id" Component={PatientTab} />
           <Route path="/patient/:id/examens" Component={Examens} />
-          <Route path="/patient/:id/parcours-professionnel" Component={ParcoursProfessionnels} />
-          <Route path="/patient/:id/examens/abdominal" Component={ExamenAbdominaireDetails} />
+          <Route
+            path="/patient/:id/parcours-professionnel"
+            Component={ParcoursProfessionnels}
+          />
+          <Route
+            path="/patient/:id/examens/abdominal"
+            Component={ExamenAbdominaireDetails}
+          />
           <Route
             path="/patient/:id/examens/audio-visuelle"
             Component={ExamenAudioVisuelle}
@@ -60,16 +66,16 @@ createRoot(document.getElementById("root")).render(
             Component={ExamenRadiologique}
           />
           <Route
+            path="/patient/:id/examens/vasculaire"
+            Component={ExamenVasculaire}
+          />
+          <Route
             path="/patient/:id/examens/psychotechnique"
             Component={ExamenPsychotechniqueDetails}
           />
           <Route
             path="/patient/:id/examens/genito-urinaire"
             Component={ExamenGenitoUrinaire}
-          />
-          <Route
-            path="/patient/:id/organes-sens"
-            Component={OrganesSensDetails}
           />
           <Route path="/patient/:id/tolerance" Component={ToleranceDetails} />
           <Route path="/patient/:id/muscles" Component={MusclesDetails} />

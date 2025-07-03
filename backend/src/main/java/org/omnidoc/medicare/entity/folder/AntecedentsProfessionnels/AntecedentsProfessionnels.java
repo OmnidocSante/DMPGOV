@@ -34,9 +34,6 @@ public class AntecedentsProfessionnels {
     private String intoxicationsNonProfessionnelles;
 
     @OneToMany(mappedBy = "antecedentsProfessionnels", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Vaccination> vaccinations = new ArrayList<>();
-
-    @OneToMany(mappedBy = "antecedentsProfessionnels", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Serum> serums = new ArrayList<>();
 
     private String IPIaccidents;
@@ -46,20 +43,6 @@ public class AntecedentsProfessionnels {
     @OneToOne
     @JoinColumn(name = "dossier_id")
     private DossierMedicale dossierMedicale;
-
-
-
-    @PrePersist
-    public void prePersist() {
-        if (vaccinations.isEmpty()) {
-            for (TypeVaccination type : TypeVaccination.values()) {
-                Vaccination v = new Vaccination();
-                v.setType(type);
-                v.setAntecedentsProfessionnels(this);
-                vaccinations.add(v);
-            }
-        }
-    }
 
 
 

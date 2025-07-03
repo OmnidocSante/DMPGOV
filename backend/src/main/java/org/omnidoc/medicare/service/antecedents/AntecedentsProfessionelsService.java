@@ -67,15 +67,8 @@ public class AntecedentsProfessionelsService {
     }
 
 
-    public List<Vaccination> getVaccination(Long patientId) throws Exception {
-        return antecedentsProfessionelsRepo.findByDossierMedicale_Patient_IdAndDossierMedicale_IsCurrent(patientId, true).getVaccinations();
 
-    }
 
-    public List<Vaccination> getVaccinationByDossierId(Long dossierId) {
-        return antecedentsProfessionelsRepo.findByDossierMedicale_Id(dossierId).get().getVaccinations();
-
-    }
 
     public List<Serum> getSerumByPatientId(Long patientId) throws Exception {
         List<Serum> serums = antecedentsProfessionelsRepo.findByDossierMedicale_Patient_IdAndDossierMedicale_IsCurrent(patientId, true).getSerums();
@@ -101,18 +94,7 @@ public class AntecedentsProfessionelsService {
         serumRepo.deleteById(serumId);
     }
 
-    public List<Vaccination> getVaccinationByPatientId(Long patientId) {
-        AntecedentsProfessionnels antecedentsProfessionnels = antecedentsProfessionelsRepo.findByDossierMedicale_Patient_IdAndDossierMedicale_IsCurrent(patientId, true);
-        return antecedentsProfessionnels.getVaccinations();
-    }
 
-    public void updateVaccinations(Long patientId, List<Vaccination> updateVaccinations) {
-        AntecedentsProfessionnels antecedentsProfessionnels = antecedentsProfessionelsRepo.findByDossierMedicale_Patient_IdAndDossierMedicale_IsCurrent(patientId, true);
-        for (Vaccination vaccination : updateVaccinations) {
-            vaccination.setAntecedentsProfessionnels(antecedentsProfessionnels);
-        }
-        vaccinationRepo.saveAll(updateVaccinations);
-    }
 
 
 }

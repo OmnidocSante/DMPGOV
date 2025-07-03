@@ -6,7 +6,7 @@ import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import useUser from "@/pages/auth/useUser";
 import instance from "@/pages/auth/AxiosInstance";
 
-export default function ExamenRadiologique() {
+export default function ExamenVasculaire() {
   const user = useUser();
   const { id } = useParams();
   const navigate = useNavigate();
@@ -24,9 +24,11 @@ export default function ExamenRadiologique() {
     setError(null);
     try {
       const res = await instance.get(url);
+      console.log(res.data);
+      
       setExamen(res.data);
     } catch (err) {
-      console.error("Error fetching examen radiologique:", err);
+      console.error("Error fetching Examen Radiologique:", err);
       setError("Impossible de charger l'examen radiologique.");
       setExamen(null);
     } finally {
@@ -35,7 +37,7 @@ export default function ExamenRadiologique() {
   };
 
   useEffect(() => {
-    fetchData(`/api/examens/radiologique/patient/${id}`);
+    fetchData(`/api/examens/vasculaire/patient/${id}`);
   }, [id]);
 
   const handleFieldChange = (key, value) => {
@@ -43,19 +45,16 @@ export default function ExamenRadiologique() {
     setExamen((prev) => ({ ...prev, [key]: value }));
   };
 
-  // Toggle handler for binary choice
-  const handleToggle = (value) => {
-    handleFieldChange("hasPassed", value);
-  };
-
   const handleSave = async () => {
     if (!isEditMode || isHistory || !examen?.id) return;
     try {
-      await instance.put(`/api/examens/radiologique/patient/${id}`, examen);
+        console.log(examen);
+        
+      await instance.put(`/api/examens/vasculaire/patient/${id}`, examen);
       setIsEditMode(false);
-      fetchData(`/api/examens/radiologique/patient/${id}`);
+      fetchData(`/api/examens/vasculaire/patient/${id}`);
     } catch (err) {
-      console.error("Error saving examen radiologique:", err);
+      console.error("Error saving Examen Radiologique:", err);
       setError("Erreur lors de l'enregistrement de l'examen.");
     }
   };
@@ -63,7 +62,7 @@ export default function ExamenRadiologique() {
   const handleHistoriqueClick = async () => {
     if (isEditMode) return;
     if (isHistory) {
-      fetchData(`/api/examens/radiologique/patient/${id}`);
+      fetchData(`/api/examens/vasculaire/patient/${id}`);
       setIsHistory(false);
       setShowHistoryBanner(false);
     } else {
@@ -71,7 +70,8 @@ export default function ExamenRadiologique() {
         try {
           const res = await instance.get(`/api/patient/${id}/historique`);
           setHistorique(res.data);
-        } catch {
+        } catch (err) {
+          console.error("Error fetching history metadata:", err);
           setHistorique([]);
         }
       }
@@ -79,8 +79,8 @@ export default function ExamenRadiologique() {
     }
   };
 
-  const fetchItem = (dossierId) => {
-    fetchData(`/api/examens/radiologique/dossier/${dossierId}`);
+  const fetchItem = async (dossierId) => {
+    fetchData(`/api/examens/vasculaire/dossier/${dossierId}`);
     setIsHistory(true);
     setIsEditMode(false);
     setShowHistoryBanner(true);
@@ -123,6 +123,13 @@ export default function ExamenRadiologique() {
     );
   }
 
+  const fields = [
+    { key: "pouls", label: "Pouls" },
+    { key: "pressionArterielle", label: "Pression Artérielle" },
+    { key: "varices", label: "Varices" },
+    { key: "appareilRespiratoire", label: "Appareil Respiratoire" },
+  ];
+
   return (
     <motion.div
       initial={{ opacity: 0 }}
@@ -148,7 +155,7 @@ export default function ExamenRadiologique() {
                 Historique Mode Active
               </AlertTitle>
               <AlertDescription className="text-sm text-gray-700">
-                Consultation seule – modifications désactivées{' '}
+                <span>Consultation seule - modifications désactivées </span>
                 <span
                   onClick={handleHistoriqueClick}
                   className="text-red-500 cursor-pointer hover:underline"
@@ -168,9 +175,7 @@ export default function ExamenRadiologique() {
         >
           <ArrowLeft className="h-6 w-6 text-gray-700" />
         </button>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Examen Radiologique
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-800">Examen Vasculaire</h1>
         {user.role === "MEDECIN" && (
           <div className="flex gap-3">
             <button
@@ -190,7 +195,7 @@ export default function ExamenRadiologique() {
             {isEditMode ? (
               <button
                 onClick={() => {
-                  fetchData(`/api/examens/radiologique/patient/${id}`);
+                  fetchData(`/api/examens/vasculaire/patient/${id}`);
                   setIsEditMode(false);
                 }}
                 disabled={isHistory}
@@ -250,7 +255,7 @@ export default function ExamenRadiologique() {
                 className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border border-gray-200"
               >
                 <p className="text-sm font-medium text-gray-700">
-                  <span className="mr-2 text-gray-500">Date du dossier :</span>
+                  <span className="mr-2 text-gray-500">Date du dossier:</span>
                   {new Date(item.date).toLocaleString("fr-FR", {
                     year: "numeric",
                     month: "2-digit",
@@ -272,64 +277,28 @@ export default function ExamenRadiologique() {
       )}
 
       <div className="space-y-6">
-        {examen && (
-          <>
-            {/* Notes field */}
-            <motion.div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
-              <h2 className="text-lg font-semibold text-gray-800 mb-2">Notes</h2>
-              <textarea
-                value={examen.notes || ""}
-                onChange={(e) => handleFieldChange("notes", e.target.value)}
-                placeholder="Entrez vos notes ici..."
+        {examen &&
+          fields.map(({ key, label }) => (
+            <motion.div
+              key={key}
+              className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all"
+            >
+              <h2 className="text-lg font-semibold text-gray-800 mb-2">
+                {label}
+              </h2>
+              <input
+                value={examen[key] || ""}
+                onChange={(e) => handleFieldChange(key, e.target.value)}
+                placeholder={label}
                 disabled={!isEditMode || isHistory}
-                className={`w-full h-32 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
+                className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all ${
                   isEditMode && !isHistory
                     ? "border-green-200 focus:ring-green-300"
                     : "border-gray-200 focus:ring-gray-200 bg-gray-50 cursor-not-allowed"
                 }`}
               />
             </motion.div>
-
-            {/* hasPassed toggle */}
-            <motion.div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all flex items-center justify-between">
-              <h2 className="text-lg font-semibold text-gray-800">Examen thoracique passé</h2>
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  disabled={!isEditMode || isHistory}
-                  onClick={() => handleToggle(true)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    examen.hasPassed === true
-                      ? "bg-green-500 text-white shadow-inner"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  } ${
-                    !isEditMode || isHistory
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }`}
-                >
-                  Oui
-                </button>
-                <button
-                  type="button"
-                  disabled={!isEditMode || isHistory}
-                  onClick={() => handleToggle(false)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${
-                    examen.hasPassed === false
-                      ? "bg-red-500 text-white shadow-inner"
-                      : "bg-gray-100 text-gray-600 hover:bg-gray-200"
-                  } ${
-                    !isEditMode || isHistory
-                      ? "opacity-50 cursor-not-allowed"
-                      : ""
-                  }`}
-                >
-                  Non
-                </button>
-              </div>
-            </motion.div>
-          </>
-        )}
+          ))}
       </div>
     </motion.div>
   );

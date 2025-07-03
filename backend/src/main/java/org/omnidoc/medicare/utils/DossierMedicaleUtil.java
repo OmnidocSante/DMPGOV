@@ -3,14 +3,17 @@ package org.omnidoc.medicare.utils;
 
 import org.omnidoc.medicare.entity.folder.AntecedentsFamiliaux.AntecedentsFamiliaux;
 import org.omnidoc.medicare.entity.folder.AntecedentsProfessionnels.AntecedentsProfessionnels;
+import org.omnidoc.medicare.entity.folder.AntecedentsProfessionnels.Vaccination;
 import org.omnidoc.medicare.entity.folder.details.*;
 import org.omnidoc.medicare.entity.folder.examens.*;
 import org.omnidoc.medicare.entity.users.Patient;
 import org.omnidoc.medicare.entity.users.User;
+import org.omnidoc.medicare.enums.PlanMedical;
 import org.omnidoc.medicare.enums.Status;
 import org.omnidoc.medicare.exceptions.ApiException;
 import org.omnidoc.medicare.repository.*;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 
 @Component
@@ -24,14 +27,15 @@ public class DossierMedicaleUtil {
     private final PatientDetailRepo patientDetailRepo;
     private final ToleranceRepo toleranceRepo;
     private final ExamenPsychotechniqueRepo examenPsychotechniqueRepo;
-    private final ExamenRadiologiqueRepo examenRadiologiqueRepo;
     private final ExamenAuditifRepo examenAuditifRepo;
     private final ExamenAppareilGenitoUrinaireRepo examenAppareilGenitoUrinaireRepo;
     private final ExamenAbdominaireRepo examenAbdominaireRepo;
     private final PatientRepo patientRepo;
     private final HistoriqueStatusRepo historiqueStatusRepo;
+    private final ExamenRadiologiqueRepo examenRadiologiqueRepo;
+    private final VaccinationRepo vaccinationRepo;
 
-    public DossierMedicaleUtil(DossierMedicaleRepo dossierMedicaleRepo, AntecedentsProfessionelsRepo antecedentsProfessionelsRepo, AntecedentsFamiliauxRepo antecedentsFamiliauxRepo, ConclusionRepo conclusionRepo, MusclesRepo musclesRepo, OrganesSensRepo organesSensRepo, PatientDetailRepo patientDetailRepo, ToleranceRepo toleranceRepo, ExamenPsychotechniqueRepo examenPsychotechniqueRepo, ExamenRadiologiqueRepo examenRadiologiqueRepo, ExamenAuditifRepo examenAuditifRepo, ExamenAppareilGenitoUrinaireRepo examenAppareilGenitoUrinaireRepo, ExamenAbdominaireRepo examenAbdominaireRepo, PatientRepo patientRepo, HistoriqueStatusRepo historiqueStatusRepo) {
+    public DossierMedicaleUtil(DossierMedicaleRepo dossierMedicaleRepo, AntecedentsProfessionelsRepo antecedentsProfessionelsRepo, AntecedentsFamiliauxRepo antecedentsFamiliauxRepo, ConclusionRepo conclusionRepo, MusclesRepo musclesRepo, OrganesSensRepo organesSensRepo, PatientDetailRepo patientDetailRepo, ToleranceRepo toleranceRepo, ExamenPsychotechniqueRepo examenPsychotechniqueRepo, ExamenAuditifRepo examenAuditifRepo, ExamenAppareilGenitoUrinaireRepo examenAppareilGenitoUrinaireRepo, ExamenAbdominaireRepo examenAbdominaireRepo, PatientRepo patientRepo, HistoriqueStatusRepo historiqueStatusRepo, ExamenRadiologiqueRepo examenRadiologiqueRepo, VaccinationRepo vaccinationRepo) {
         this.dossierMedicaleRepo = dossierMedicaleRepo;
         this.antecedentsProfessionelsRepo = antecedentsProfessionelsRepo;
         this.antecedentsFamiliauxRepo = antecedentsFamiliauxRepo;
@@ -41,23 +45,27 @@ public class DossierMedicaleUtil {
         this.patientDetailRepo = patientDetailRepo;
         this.toleranceRepo = toleranceRepo;
         this.examenPsychotechniqueRepo = examenPsychotechniqueRepo;
-        this.examenRadiologiqueRepo = examenRadiologiqueRepo;
         this.examenAuditifRepo = examenAuditifRepo;
         this.examenAppareilGenitoUrinaireRepo = examenAppareilGenitoUrinaireRepo;
         this.examenAbdominaireRepo = examenAbdominaireRepo;
         this.patientRepo = patientRepo;
         this.historiqueStatusRepo = historiqueStatusRepo;
+        this.examenRadiologiqueRepo = examenRadiologiqueRepo;
+        this.vaccinationRepo = vaccinationRepo;
     }
 
+
+
+    @Transactional
     public void createDossier(User createdUser) throws Exception {
         Patient patient = new Patient();
         patient.setUser(createdUser);
         patient.setStatus(Status.A_RECLASSER);
-        patientRepo.save(patient); // Patient needs to be saved first to get its ID
+        patient.setPlanMedical(PlanMedical.NORMAL);
+        patientRepo.save(patient);
 
         DossierMedicale dossierMedicale = new DossierMedicale();
         dossierMedicale.setPatient(patient);
-        // We will save dossierMedicale at the end after linking all children.
 
         HistoriqueStatus historiqueStatus = new HistoriqueStatus();
         historiqueStatus.setStatus(Util.encryptIfNotNull(Status.A_RECLASSER.name()));
@@ -65,7 +73,7 @@ public class DossierMedicaleUtil {
         historiqueStatus.setSignature(null);
         historiqueStatus.setMedecin(null);
         historiqueStatus.setPatient(patient);
-        historiqueStatusRepo.save(historiqueStatus); // This is not cascaded from DossierMedicale, so its own save is fine.
+        historiqueStatusRepo.save(historiqueStatus);
 
         AntecedentsFamiliaux antecedentsFamiliaux = new AntecedentsFamiliaux();
         antecedentsFamiliaux.setDossierMedicale(dossierMedicale);
@@ -152,12 +160,18 @@ public class DossierMedicaleUtil {
 
         ExamenRadiologique examenRadiologique = new ExamenRadiologique();
         examenRadiologique.setDossierMedicale(dossierMedicale);
-        examenRadiologique.setVarices(null);
-        examenRadiologique.setPouls(null);
-        examenRadiologique.setPressionArterielle(null);
-        examenRadiologique.setAppareilRespiratoire(null);
-        // examenRadiologiqueRepo.save(examenRadiologique); // Removed
+        examenRadiologique.setNotes(null);
+        examenRadiologique.setHasPassed(null);
         dossierMedicale.setExamenRadiologique(examenRadiologique); // Set on parent
+
+        ExamenVasculaire examenVasculaire = new ExamenVasculaire();
+        examenVasculaire.setDossierMedicale(dossierMedicale);
+        examenVasculaire.setVarices(null);
+        examenVasculaire.setPouls(null);
+        examenVasculaire.setPressionArterielle(null);
+        examenVasculaire.setAppareilRespiratoire(null);
+        dossierMedicale.setExamenVasculaire(examenVasculaire); // Set on parent
+
 
         ExamenAuditif examenAuditif = new ExamenAuditif();
         examenAuditif.setDossierMedicale(dossierMedicale);
@@ -180,6 +194,12 @@ public class DossierMedicaleUtil {
         examenAbdominaire.setAbdomen(null);
         // examenAbdominaireRepo.save(examenAbdominaire); // Removed
         dossierMedicale.setExamenAbdominaire(examenAbdominaire); // Set on parent
+
+        Vaccination vaccination = new Vaccination();
+        vaccination.setDossierMedicale(dossierMedicale);
+        vaccination.setNotes(null);
+        vaccination.setIsWellVaccinated(null);
+        dossierMedicale.setVaccination(vaccination);
 
         // --- Final Save ---
         // This single save will persist dossierMedicale AND all the child entities
@@ -272,10 +292,9 @@ public class DossierMedicaleUtil {
         ExamenRadiologique oldER = oldDossier.getExamenRadiologique();
         ExamenRadiologique er = new ExamenRadiologique();
         er.setDossierMedicale(newDossier);
-        er.setVarices(oldER.getVarices());
-        er.setPouls(oldER.getPouls());
-        er.setPressionArterielle(oldER.getPressionArterielle());
-        er.setAppareilRespiratoire(oldER.getAppareilRespiratoire());
+        er.setNotes(oldER.getNotes());
+        er.setHasPassed(oldER.getHasPassed());
+
         examenRadiologiqueRepo.save(er);
         ExamenAuditif oldEA = oldDossier.getExamenAuditif();
         ExamenAuditif ea = new ExamenAuditif();
@@ -287,6 +306,7 @@ public class DossierMedicaleUtil {
         ea.setOeilDroit(oldEA.getOeilDroit());
         ea.setOeilGauche(oldEA.getOeilGauche());
         examenAuditifRepo.save(ea);
+
         ExamenAppareilGenitoUrinaire oldEAG = oldDossier.getExamenAppareilGenitoUrinaire();
         ExamenAppareilGenitoUrinaire eag = new ExamenAppareilGenitoUrinaire(newDossier, oldEAG.getOculaires(), oldEAG.getTendinaux(), oldEAG.getReflexes(), oldEAG.getEquilibre(), oldEAG.getTremblement(), oldEAG.getNeuroPsychisme(), oldEAG.getGlandesEndocrines(), oldEAG.getRate(), oldEAG.getUrinaire(), oldEAG.getGanglions(), oldEAG.getRegles(), oldEAG.getSucre(), oldEAG.getAlbumine());
         examenAppareilGenitoUrinaireRepo.save(eag);
@@ -294,6 +314,15 @@ public class DossierMedicaleUtil {
         ExamenAbdominaire eab = new ExamenAbdominaire();
         eab.setDossierMedicale(newDossier);
         eab.setAbdomen(oldEAb.getAbdomen());
+
+        Vaccination vaccination = oldDossier.getVaccination();
+        Vaccination vaccination1 = new Vaccination();
+        vaccination1.setDossierMedicale(newDossier);
+        vaccination1.setIsWellVaccinated(vaccination.getIsWellVaccinated());
+        vaccination1.setNotes(vaccination.getNotes());
+        vaccinationRepo.save(vaccination1);
+
+
         examenAbdominaireRepo.save(eab);
     }
 }

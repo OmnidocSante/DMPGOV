@@ -13,19 +13,19 @@ import org.omnidoc.medicare.entity.folder.details.DossierMedicale;
 @Setter
 @AllArgsConstructor
 @NoArgsConstructor
+@Table(name = "examen_radiologique")
 public class ExamenRadiologique {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private String pouls;
-    private String PressionArterielle;
-    private String varices;
-    private String appareilRespiratoire;
+
+
+    private String notes;
+
+    private Boolean hasPassed;
 
     @JsonIgnore
-
     @OneToOne
-
     @JoinColumn(name = "dossier_id")
     private DossierMedicale dossierMedicale;
 

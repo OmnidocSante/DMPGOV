@@ -6,9 +6,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import org.omnidoc.medicare.enums.TypeVaccination;
-
-import java.time.LocalDate;
+import org.omnidoc.medicare.entity.folder.details.DossierMedicale;
 
 @Entity
 @Getter
@@ -16,20 +14,19 @@ import java.time.LocalDate;
 @AllArgsConstructor
 @NoArgsConstructor
 @Table(name = "vaccinations")
-
 public class Vaccination {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Enumerated(EnumType.STRING)
-    private TypeVaccination type;
+    private String notes;
 
-    private LocalDate date;
+    private Boolean isWellVaccinated;
 
     @JsonIgnore
-    @ManyToOne
-    @JoinColumn(name = "antecedent_id")
-    private AntecedentsProfessionnels antecedentsProfessionnels;
+    @OneToOne
+    @JoinColumn(name = "dossier_id")
+    private DossierMedicale dossierMedicale;
+
 }

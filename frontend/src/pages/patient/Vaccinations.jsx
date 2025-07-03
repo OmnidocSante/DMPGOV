@@ -1,253 +1,222 @@
-import { zodResolver } from "@hookform/resolvers/zod";
-import { motion } from "framer-motion";
-import { ArrowLeft, Ban, Edit, Save } from "lucide-react"; // No Plus or Trash needed for this logic
+import { motion, AnimatePresence } from "framer-motion";
+import { ArrowLeft, Edit, Save, Ban, HistoryIcon, History } from "lucide-react";
 import { useEffect, useState } from "react";
-import { useFieldArray, useForm } from "react-hook-form";
 import { useNavigate, useParams } from "react-router-dom";
-import { z } from "zod";
-import useUser from "../auth/useUser";
-import instance from "../auth/AxiosInstance";
-import { format, parseISO } from "date-fns"; // parseISO to handle ISO date strings from backend
-import { TypeVaccinationOptions } from "@/enums/enums";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import useUser from "@/pages/auth/useUser";
+import instance from "@/pages/auth/AxiosInstance";
 
-// Define the schema for a single vaccination entry
-const vaccinationSchema = z.object({
-  id: z.number().optional(), // Existing vaccinations will have an ID
-  type: z.string(), // Type will be read-only, but part of the form data
-  date: z
-    .string()
-    .nullable()
-    .transform((e) => (e === "" ? null : e)), // Date can be null or a string, transform empty string to null
-});
-
-export default function Vaccinations() {
+export default function Vaccination() {
   const user = useUser();
-  const [isEditMode, setIsEditMode] = useState(false);
+  const { id } = useParams();
   const navigate = useNavigate();
-  const { id } = useParams(); // 'id' will refer to 'patientId' for vaccinations
+
+  const [vaccination, setVaccination] = useState(null);
+  const [historique, setHistorique] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [existingVaccinations, setExistingVaccinations] = useState([]);
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [isHistory, setIsHistory] = useState(false);
+  const [showHistoryBanner, setShowHistoryBanner] = useState(false);
+  const [error, setError] = useState(null);
 
-  const {
-    control,
-    register,
-    handleSubmit,
-    reset,
-    formState: { errors },
-  } = useForm({
-    resolver: zodResolver(
-      z.object({
-        vaccinations: z.array(vaccinationSchema),
-      })
-    ),
-    defaultValues: {
-      vaccinations: [],
-    },
-  });
-
-  const { fields } = useFieldArray({
-    // No append or remove needed since types are pre-built
-    control,
-    name: "vaccinations",
-  });
-
-  const fetchData = async () => {
+  const fetchData = async (url) => {
+    setLoading(true);
+    setError(null);
     try {
-      // For vaccinations, we always fetch by patient ID
-      const response = await instance.get(
-        `/api/antecedents-professionnels/patient/${id}/vaccinations`
-      );
-
-      // Map the fetched data to the form structure.
-      // Ensure date is in 'yyyy-MM-dd' format for input type="date"
-      const formattedVaccinations = response.data.map((vac) => ({
-        ...vac,
-        date: vac.date ? format(parseISO(vac.date), "yyyy-MM-dd") : "", // Format for input[type="date"]
-      }));
-      setExistingVaccinations(formattedVaccinations);
-      reset({ vaccinations: formattedVaccinations }); // Populate form with existing data
+      const res = await instance.get(url);
+      setVaccination(res.data);
     } catch (err) {
-      if (err.response && err.response.data.message === "not allowed") {
-        navigate("/unauthorized");
-      }
-      console.error("Error fetching vaccinations:", err);
+      console.error("Error fetching Vaccination:", err);
+      setError("Impossible de charger les données de vaccination.");
     } finally {
       setLoading(false);
     }
   };
 
   useEffect(() => {
-    fetchData();
-  }, [id]); // Re-fetch if 'id' changes
+    fetchData(`/api/antecedents-professionnels/patient/${id}/vaccinations`);
+  }, [id]);
 
-  const handleSave = async (formData) => {
+  const handleFieldChange = (key, value) => {
+    if (!isEditMode || isHistory || !vaccination) return;
+    setVaccination((prev) => ({ ...prev, [key]: value }));
+  };
+
+  const handleToggle = (value) => {
+    handleFieldChange('isWellVaccinated', value);
+  };
+
+  const handleSave = async () => {
+    if (!isEditMode || isHistory || !vaccination?.id) return;
     try {
-      // The backend expects a List<Vaccination> and handles updates
-      // We need to transform the date back to a format acceptable by LocalDate (e.g., ISO string or null)
-      const vaccinationsToSave = formData.vaccinations.map((vac) => ({
-        id: vac.id,
-        type: vac.type,
-        date: vac.date ? vac.date : null, // Send null if date is empty
-      }));
-
       await instance.put(
         `/api/antecedents-professionnels/patient/${id}/vaccinations`,
-        vaccinationsToSave
+        vaccination
       );
-
-      await fetchData(); // Re-fetch to update the list
       setIsEditMode(false);
-      // No reset for new items, as we are only modifying existing ones.
-      // The `reset` call within `fetchData` will handle repopulating the form.
+      fetchData(`/api/antecedents-professionnels/patient/${id}/vaccinations`);
     } catch (err) {
-      console.error("Error saving vaccinations:", err);
+      console.error("Error saving Vaccination:", err);
+      setError("Erreur lors de l'enregistrement de la vaccination.");
     }
   };
 
-  if (loading) {
-    return (
-      <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
-        className="min-h-screen flex items-center justify-center bg-bay-of-many-50"
-      >
-        <motion.div
-          className="flex flex-col items-center space-y-4 p-6 bg-white border border-bay-of-many-200 rounded-xl shadow-md"
-          initial={{ scale: 0.95, opacity: 0 }}
-          animate={{ scale: 1, opacity: 1 }}
-        >
-          <motion.div
-            className="w-12 h-12 border-4 border-bay-of-many-400 border-t-transparent rounded-full animate-spin"
-            animate={{ rotate: 360 }}
-            transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
-          />
-          <p className="text-bay-of-many-700 font-medium text-sm tracking-wide">
-            Chargement des vaccinations...
-          </p>
-        </motion.div>
-      </motion.div>
+  const handleHistoriqueClick = async () => {
+    if (isEditMode) return;
+    if (isHistory) {
+      fetchData(`/api/antecedents-professionnels/patient/${id}/vaccinations`);
+      setIsHistory(false);
+      setShowHistoryBanner(false);
+    } else {
+      if (historique.length === 0) {
+        try {
+          const res = await instance.get(`/api/patient/${id}/historique`);
+          setHistorique(res.data);
+        } catch (err) {
+          console.error("Error fetching history metadata:", err);
+          setHistorique([]);
+        }
+      }
+      setIsHistory(true);
+    }
+  };
+
+  const fetchItem = async (dossierId) => {
+    fetchData(
+      `/api/antecedents-professionnels/dossier/${dossierId}/vaccinations`
     );
-  }
+    setIsHistory(true);
+    setIsEditMode(false);
+    setShowHistoryBanner(true);
+  };
+
+  if (loading) return (
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="min-h-screen flex items-center justify-center bg-bay-of-many-50">
+      <motion.div className="flex flex-col items-center space-y-4 p-6 bg-white border border-bay-of-many-200 rounded-xl shadow-md" initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}>
+        <motion.div className="w-12 h-12 border-4 border-bay-of-many-400 border-t-transparent rounded-full animate-spin" animate={{ rotate: 360 }} transition={{ repeat: Infinity, duration: 1, ease: "linear" }} />
+        <p className="text-bay-of-many-700 font-medium text-sm tracking-wide">Chargement des données</p>
+      </motion.div>
+    </motion.div>
+  );
+
+  if (error) return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-bay-of-many-50">
+      <Alert variant="destructive" className="max-w-sm">
+        <Ban className="size-5" />
+        <AlertTitle>Erreur</AlertTitle>
+        <AlertDescription>{error}</AlertDescription>
+      </Alert>
+    </div>
+  );
 
   return (
-    <motion.form
-      onSubmit={handleSubmit(handleSave)}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      transition={{ duration: 0.3 }}
-      className="p-6 min-h-screen bg-bay-of-many-50"
-    >
-      {/* Header */}
+    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.3 }} className="p-6 bg-bay-of-many-50 min-h-screen">
+      <AnimatePresence>
+        {showHistoryBanner && (
+          <motion.div className="w-full max-w-md fixed top-20 left-1/2 -translate-x-1/2 z-50" initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ type: "spring", stiffness: 300, damping: 20 }}>
+            <Alert variant="default" className="bg-white/95 backdrop-blur-sm border border-green-100 shadow-lg">
+              <HistoryIcon className="size-5 text-green-600 shrink-0" />
+              <AlertTitle className="text-sm font-semibold text-green-800 mb-1">Historique Mode Active</AlertTitle>
+              <AlertDescription className="text-sm text-gray-700">
+                <span>Consultation seule - modifications désactivées </span>
+                <span onClick={handleHistoriqueClick} className="text-red-500 cursor-pointer hover:underline">restaurer</span>
+              </AlertDescription>
+            </Alert>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <div className="flex items-center justify-between mb-8">
-        <button
-          type="button"
-          onClick={() => navigate(-1)}
-          className="p-2 hover:bg-gray-100 rounded-full transition-colors"
-        >
-          <ArrowLeft className="h-6 w-6 text-gray-700" />
-        </button>
-        <h1 className="text-2xl font-bold text-gray-800">
-          Gestion des Vaccinations
-        </h1>
+        <button onClick={() => navigate(-1)} className="p-2 rounded-full hover:bg-gray-100"><ArrowLeft className="h-6 w-6 text-gray-700" /></button>
+        <h1 className="text-2xl font-bold text-gray-800">Vaccination</h1>
         {user.role === "MEDECIN" && (
           <div className="flex gap-3">
+            <button onClick={handleHistoriqueClick} disabled={isEditMode} className={`p-2 pl-4 rounded-lg flex items-center gap-2 transition-all ${isEditMode ? "bg-gray-200 cursor-not-allowed" : "hover:bg-gray-50 hover:-translate-y-0.5"}`}>
+              <History className="h-6 w-6 text-gray-600" />
+              <span className="text-sm font-medium text-gray-800">{isHistory ? "Cacher l'historique" : "Voir historique"}</span>
+            </button>
             {isEditMode ? (
-              <button
-                type="button"
-                onClick={() => {
-                  setIsEditMode(false);
-                  fetchData(); // Revert changes by re-fetching original data
-                }}
-                className={`p-2 pl-4 rounded-lg flex items-center gap-2 transition-all`}
-              >
+              <button onClick={() => { fetchData(`/api/antecedents-professionnels/patient/${id}/vaccinations`); setIsEditMode(false); }} disabled={isHistory} className="p-2 pl-4 rounded-lg flex items-center gap-2 hover:bg-red-50">
                 <Ban className="h-6 w-6 text-red-600" />
-                <span className="text-sm font-medium text-red-800">
-                  Annuler
-                </span>
+                <span className="text-sm font-medium text-red-800">Annuler</span>
               </button>
             ) : (
-              <button
-                type="button"
-                onClick={() => setIsEditMode(true)}
-                className={`p-2 pl-4 rounded-lg flex items-center gap-2 transition-all ${
-                  isEditMode
-                    ? "bg-gray-200 cursor-not-allowed"
-                    : "hover:bg-blue-50 hover:-translate-y-0.5"
-                }`}
-                disabled={isEditMode}
-              >
-                <Edit className="h-6 w-6 text-blue-600" />
-                <span className="text-sm font-medium text-blue-800">
-                  Modifier
-                </span>
+              <button onClick={() => setIsEditMode(true)} disabled={isHistory} className="p-2 pl-4 rounded-lg flex items-center gap-2 hover:bg-green-50">
+                <Edit className="h-6 w-6 text-green-600" />
+                <span className="text-sm font-medium text-green-800">Modifier</span>
               </button>
             )}
-
-            <button
-              type="submit"
-              className={`p-2 pl-4 rounded-lg flex items-center gap-2 transition-all ${
-                !isEditMode
-                  ? "bg-gray-200 cursor-not-allowed"
-                  : "hover:bg-green-50 hover:-translate-y-0.5"
-              }`}
-              disabled={!isEditMode}
-            >
-              <Save className="h-6 w-6 text-green-600" />
-              <span className="text-sm font-medium text-green-800">
-                Enregistrer
-              </span>
+            <button onClick={handleSave} disabled={!isEditMode || isHistory} className={`p-2 pl-4 rounded-lg flex items-center gap-2 transition-all ${!isEditMode || isHistory ? "bg-gray-200 cursor-not-allowed" : "hover:bg-blue-50 hover:-translate-y-0.5"}`}>
+              <Save className="h-6 w-6 text-blue-600" />
+              <span className="text-sm font-medium text-blue-800">Enregistrer</span>
             </button>
           </div>
         )}
       </div>
 
-      <div className="space-y-6 mb-12  md:grid md:grid-cols-3 md:gap-x-5">
-        {existingVaccinations.length > 0 ? (
-          fields.map((field, index) => (
-            <motion.div
-              key={field.id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="bg-white rounded-xl shadow-sm border border-gray-200 p-6 transition-all hover:shadow-md"
-            >
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-semibold text-gray-800">
-                  {TypeVaccinationOptions.find(
-                    ({ value }) => value === field.type
-                  )?.label || field.type}
-                </h2>
-              </div>
-              <div className="space-y-2">
-                <p className="text-gray-600">
-                  <span className="font-medium">Date: </span>
-                  {isEditMode ? (
-                    <input
-                      type="date"
-                      {...register(`vaccinations.${index}.date`)}
-                      className="ml-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-300"
-                    />
-                  ) : (
-                    <span>{field.date || "Non renseignée"}</span>
-                  )}
+      {isHistory && (
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -20 }} transition={{ duration: 0.3 }} className="my-4 space-y-2 bg-white p-4 rounded-xl shadow-inner">
+          <h3 className="text-lg font-semibold text-gray-700 mb-3 border-b pb-2">Versions Historiques</h3>
+          {historique.length > 0 ? (
+            historique.map((item) => (
+              <div key={item.id} onClick={() => fetchItem(item.id)} className="p-3 bg-gray-50 rounded-lg cursor-pointer hover:bg-gray-100 transition-colors border border-gray-200">
+                <p className="text-sm font-medium text-gray-700">
+                  <span className="mr-2 text-gray-500">Date du dossier:</span>
+                  {new Date(item.date).toLocaleString("fr-FR", {
+                    year: "numeric",
+                    month: "2-digit",
+                    day: "2-digit",
+                    hour: "2-digit",
+                    minute: "2-digit",
+                    second: "2-digit",
+                    hour12: false,
+                  })}
                 </p>
-                {errors.vaccinations?.[index]?.date && (
-                  <p className="text-red-500 text-sm mt-2">
-                    {errors.vaccinations[index].date.message}
-                  </p>
-                )}
               </div>
-            </motion.div>
-          ))
-        ) : (
-          <div className="w-full p-4 bg-white text-blue-600">
-            <div className="flex items-center justify-center gap-2">
-              <span className="font-medium">
-                Aucune vaccination n’a encore été attribuée.
-              </span>
+            ))
+          ) : (
+            <p className="text-gray-500 italic text-sm">Aucun historique disponible.</p>
+          )}
+        </motion.div>
+      )}
+
+      <div className="space-y-6">
+        {vaccination && (
+          <motion.div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all">
+            <h2 className="text-lg font-semibold text-gray-800 mb-2">Notes</h2>
+            <textarea
+              value={vaccination.notes || ''}
+              onChange={(e) => handleFieldChange('notes', e.target.value)}
+              placeholder="Notes"
+              disabled={!isEditMode || isHistory}
+              className={`w-full h-24 px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 transition-all ${isEditMode && !isHistory ? "border-green-200 focus:ring-green-300" : "border-gray-200 focus:ring-gray-200 bg-gray-50 cursor-not-allowed"}`}
+            />
+          </motion.div>
+        )}
+        {vaccination && (
+          <motion.div className="bg-white p-6 rounded-xl shadow-sm border border-gray-200 hover:shadow-md transition-all flex items-center justify-between">
+            <h2 className="text-lg font-semibold text-gray-800">Bien vacciné</h2>
+            <div className="flex gap-2">
+              <button
+                type="button"
+                disabled={!isEditMode || isHistory}
+                onClick={() => handleToggle(true)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${vaccination.isWellVaccinated === true ? "bg-green-500 text-white shadow-inner" : "bg-gray-100 text-gray-600 hover:bg-gray-200"} ${!isEditMode || isHistory ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                Oui
+              </button>
+              <button
+                type="button"
+                disabled={!isEditMode || isHistory}
+                onClick={() => handleToggle(false)}
+                className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${vaccination.isWellVaccinated === false ? "bg-red-500 text-white shadow-inner" : "bg-gray-100 text-gray-600 hover:bg-gray-200"} ${!isEditMode || isHistory ? "opacity-50 cursor-not-allowed" : ""}`}
+              >
+                Non
+              </button>
             </div>
-          </div>
+          </motion.div>
         )}
       </div>
-    </motion.form>
+    </motion.div>
   );
 }

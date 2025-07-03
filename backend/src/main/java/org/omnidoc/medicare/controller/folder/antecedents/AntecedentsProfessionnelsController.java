@@ -4,6 +4,7 @@ import org.omnidoc.medicare.entity.folder.AntecedentsProfessionnels.AntecedentsP
 import org.omnidoc.medicare.entity.folder.AntecedentsProfessionnels.Serum;
 import org.omnidoc.medicare.entity.folder.AntecedentsProfessionnels.Vaccination;
 import org.omnidoc.medicare.service.antecedents.AntecedentsProfessionelsService;
+import org.omnidoc.medicare.service.details.VaccinationService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -15,9 +16,11 @@ import java.util.List;
 public class AntecedentsProfessionnelsController {
 
     private final AntecedentsProfessionelsService antecedentsProfessionelsService;
+    private final VaccinationService vaccinationService;
 
-    public AntecedentsProfessionnelsController(AntecedentsProfessionelsService antecedentsProfessionelsService) {
+    public AntecedentsProfessionnelsController(AntecedentsProfessionelsService antecedentsProfessionelsService, VaccinationService vaccinationService) {
         this.antecedentsProfessionelsService = antecedentsProfessionelsService;
+        this.vaccinationService = vaccinationService;
     }
 
     @GetMapping("/patient/{patientId}")
@@ -62,13 +65,13 @@ public class AntecedentsProfessionnelsController {
     }
 
     @GetMapping("/patient/{patientId}/vaccinations")
-    public ResponseEntity<List<Vaccination>> getVaccinations(@PathVariable Long patientId) {
-        return ResponseEntity.ok(antecedentsProfessionelsService.getVaccinationByPatientId(patientId));
+    public ResponseEntity<Vaccination> getVaccination(@PathVariable Long patientId) throws Exception {
+        return ResponseEntity.ok(vaccinationService.fetchByPatientId(patientId));
     }
 
     @PutMapping("/patient/{patientId}/vaccinations")
-    public ResponseEntity<List<Vaccination>> getVaccinations(@PathVariable Long patientId, @RequestBody List<Vaccination> vaccinations) {
-        antecedentsProfessionelsService.updateVaccinations(patientId, vaccinations);
+    public ResponseEntity<List<Vaccination>> getVaccinations(@PathVariable Long patientId, @RequestBody Vaccination vaccination) throws Exception {
+        vaccinationService.updateByPatientId(patientId, vaccination);
         return new ResponseEntity<>(HttpStatus.OK);
     }
 

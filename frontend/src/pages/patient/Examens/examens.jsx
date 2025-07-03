@@ -9,6 +9,7 @@ import {
   Star,
   Activity,
   Eye,
+  Heart,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
@@ -125,21 +126,38 @@ export default function Examens() {
               Évaluation de l'audition et de la vision
             </p>
           </motion.div>
-
           <motion.div
             variants={cardVariants}
             whileHover={{ y: -5 }}
             onClick={() => navigate(`/patient/${id}/examens/radiologique`)}
+            className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl shadow-sm border border-indigo-200 cursor-pointer transition-all hover:shadow-md"
+          >
+            <div className="flex justify-between items-start mb-4">
+              <Star className="w-8 h-8 text-indigo-600" />
+              <ChevronRight className="w-5 h-5 text-indigo-400" />
+            </div>
+            <h3 className="text-lg font-semibold text-indigo-800 mb-1">
+              Examens Radiologiques
+            </h3>
+            <p className="text-sm text-indigo-600">Imagerie médicale</p>
+          </motion.div>
+
+          <motion.div
+            variants={cardVariants}
+            whileHover={{ y: -5 }}
+            onClick={() => navigate(`/patient/${id}/examens/vasculaire`)}
             className="bg-gradient-to-br from-purple-50 to-purple-100 p-6 rounded-xl shadow-sm border border-purple-200 cursor-pointer transition-all hover:shadow-md"
           >
             <div className="flex justify-between items-start mb-4">
-              <Star className="w-8 h-8 text-purple-600" />
+              <Heart className="w-8 h-8 text-purple-600" />
               <ChevronRight className="w-5 h-5 text-purple-400" />
             </div>
             <h3 className="text-lg font-semibold text-purple-800 mb-1">
-              Examens Radiologiques
+              Examen Vasculaire
             </h3>
-            <p className="text-sm text-purple-600">Imagerie médicale</p>
+            <p className="text-sm text-purple-600">
+              Évaluation clinique des vaisseaux sanguins
+            </p>
           </motion.div>
 
           <motion.div

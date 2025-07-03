@@ -10,6 +10,7 @@ import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 import org.omnidoc.medicare.entity.folder.AntecedentsFamiliaux.AntecedentsFamiliaux;
 import org.omnidoc.medicare.entity.folder.AntecedentsProfessionnels.AntecedentsProfessionnels;
+import org.omnidoc.medicare.entity.folder.AntecedentsProfessionnels.Vaccination;
 import org.omnidoc.medicare.entity.folder.examens.*;
 import org.omnidoc.medicare.entity.users.Patient;
 
@@ -67,12 +68,15 @@ public class DossierMedicale {
     private ExamenRadiologique examenRadiologique;
 
 
+    @OneToOne(mappedBy = "dossierMedicale",cascade = CascadeType.ALL,orphanRemoval = true)
+    private ExamenVasculaire examenVasculaire;
+
+    @OneToOne(mappedBy = "dossierMedicale",cascade = CascadeType.ALL,orphanRemoval = true)
+    private Vaccination vaccination;
 
 
     @OneToMany(mappedBy = "dossierMedicale",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<ParcoursProfessionnel> parcoursProfessionnels;
-
-
 
 
 

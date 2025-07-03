@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 @RequestMapping("/api/examens/radiologique")
 public class ExamenRadiologiqueController {
 
+
     private final ExamenRadiologiqueService examenRadiologiqueService;
 
     public ExamenRadiologiqueController(ExamenRadiologiqueService examenRadiologiqueService) {
@@ -24,16 +25,16 @@ public class ExamenRadiologiqueController {
 
     @GetMapping("/dossier/{dossierId}")
     public ResponseEntity<ExamenRadiologique> getExamenRadiologiqueByDossierId(@PathVariable Long dossierId) throws Exception {
-        ExamenRadiologique examenRadiologique = examenRadiologiqueService.fetchByDossierId(dossierId);
-        return new ResponseEntity<>(examenRadiologique, HttpStatus.OK);
+        ExamenRadiologique examenVasculaire = examenRadiologiqueService.fetchByDossierId(dossierId);
+        return new ResponseEntity<>(examenVasculaire, HttpStatus.OK);
     }
 
     @PutMapping("/patient/{patientId}")
     public ResponseEntity<Void> updateExamenRadiologiqueByPatientId(
             @PathVariable Long patientId,
-            @RequestBody ExamenRadiologique examenRadiologiqueRequest
+            @RequestBody ExamenRadiologique examenVasculaireRequest
     ) throws Exception {
-        examenRadiologiqueService.updateByPatientId(patientId, examenRadiologiqueRequest);
+        examenRadiologiqueService.updateByPatientId(patientId, examenVasculaireRequest);
         return new ResponseEntity<>(HttpStatus.NO_CONTENT);
     }
 }

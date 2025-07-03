@@ -14,45 +14,49 @@ import static org.omnidoc.medicare.utils.Util.encryptIfNotNull;
 @Service
 public class ExamenRadiologiqueService {
 
+
+    private final AccessService accessService;
     private final DossierMedicaleRepo dossierMedicaleRepo;
     private final ExamenRadiologiqueRepo examenRadiologiqueRepo;
-    private final AccessService accessService;
 
-    public ExamenRadiologiqueService(DossierMedicaleRepo dossierMedicaleRepo, ExamenRadiologiqueRepo examenRadiologiqueRepo, AccessService accessService) {
+    public ExamenRadiologiqueService(AccessService accessService, DossierMedicaleRepo dossierMedicaleRepo, ExamenRadiologiqueRepo examenRadiologiqueRepo) {
+        this.accessService = accessService;
         this.dossierMedicaleRepo = dossierMedicaleRepo;
         this.examenRadiologiqueRepo = examenRadiologiqueRepo;
-        this.accessService = accessService;
     }
 
     public ExamenRadiologique fetchByPatientId(Long patientId) throws Exception {
         accessService.verifyAccess(patientId);
-        DossierMedicale dossier = dossierMedicaleRepo.getDossierMedicalesByPatient_idAndIsCurrentTrue(patientId).orElseThrow(() -> new ApiException("Dossier médical introuvable"));
+        DossierMedicale dossier = dossierMedicaleRepo
+                .getDossierMedicalesByPatient_idAndIsCurrentTrue(patientId)
+                .orElseThrow(() -> new ApiException("Dossier médical introuvable"));
         return getOrCreateExamen(dossier);
     }
 
     public ExamenRadiologique fetchByDossierId(Long dossierId) throws Exception {
-        DossierMedicale dossier = dossierMedicaleRepo.findById(dossierId).orElseThrow(() -> new ApiException("Dossier médical introuvable"));
+        DossierMedicale dossier = dossierMedicaleRepo.findById(dossierId)
+                .orElseThrow(() -> new ApiException("Dossier médical introuvable"));
         return getOrCreateExamen(dossier);
     }
 
     private ExamenRadiologique getOrCreateExamen(DossierMedicale dossier) throws Exception {
         ExamenRadiologique examen = dossier.getExamenRadiologique();
 
-        examen.setPouls(decryptIfNotNull(examen.getPouls()));
-        examen.setPressionArterielle(decryptIfNotNull(examen.getPressionArterielle()));
-        examen.setVarices(decryptIfNotNull(examen.getVarices()));
-        examen.setAppareilRespiratoire(decryptIfNotNull(examen.getAppareilRespiratoire()));
+        // Decrypt notes (if not null)
+        examen.setNotes(decryptIfNotNull(examen.getNotes()));
 
         return examen;
     }
 
     public void updateByPatientId(Long patientId, ExamenRadiologique examenRequest) throws Exception {
-        DossierMedicale dossier = dossierMedicaleRepo.getDossierMedicalesByPatient_idAndIsCurrentTrue(patientId).orElseThrow(() -> new ApiException("Dossier médical introuvable"));
+        DossierMedicale dossier = dossierMedicaleRepo.getDossierMedicalesByPatient_idAndIsCurrentTrue(patientId)
+                .orElseThrow(() -> new ApiException("Dossier médical introuvable"));
+
         examenRequest.setDossierMedicale(dossier);
-        examenRequest.setPouls(encryptIfNotNull(examenRequest.getPouls()));
-        examenRequest.setPressionArterielle(encryptIfNotNull(examenRequest.getPressionArterielle()));
-        examenRequest.setVarices(encryptIfNotNull(examenRequest.getVarices()));
-        examenRequest.setAppareilRespiratoire(encryptIfNotNull(examenRequest.getAppareilRespiratoire()));
+
+        // Encrypt notes (if not null)
+        examenRequest.setNotes(encryptIfNotNull(examenRequest.getNotes()));
+
         examenRadiologiqueRepo.save(examenRequest);
     }
 }
