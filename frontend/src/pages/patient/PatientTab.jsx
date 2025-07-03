@@ -860,23 +860,6 @@ export default function PatientTab() {
             <motion.div
               variants={cardVariants}
               whileHover={{ y: -5 }}
-              onClick={() => navigate(`/patient/${id}/organes-sens`)}
-              className="bg-gradient-to-br from-amber-50 to-amber-100 p-6 rounded-xl shadow-sm border border-amber-200 cursor-pointer transition-all hover:shadow-md"
-            >
-              <div className="flex justify-between items-start mb-4">
-                <Ear className="w-8 h-8 text-amber-600" />
-                <ChevronRight className="w-5 h-5 text-amber-400" />
-              </div>
-              <h3 className="text-lg font-semibold text-amber-800 mb-1">
-                Organes des sens
-              </h3>
-              <p className="text-sm text-amber-600">
-                Évaluation de la vue et de l'ouïe
-              </p>
-            </motion.div>
-            <motion.div
-              variants={cardVariants}
-              whileHover={{ y: -5 }}
               onClick={() => navigate(`/patient/${id}/tolerance`)}
               className="bg-gradient-to-br from-green-50 to-green-100 p-6 rounded-xl shadow-sm border border-green-200 cursor-pointer transition-all hover:shadow-md"
             >

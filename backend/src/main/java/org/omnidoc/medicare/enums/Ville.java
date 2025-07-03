@@ -1,11 +1,11 @@
 package org.omnidoc.medicare.enums;
-
 public enum Ville {
     CASABLANCA,
     RABAT,
     FES,
     MARRAKECH,
     TANGIER,
+    TANGER,
     AGADIR,
     MEKNES,
     OUJDA,
