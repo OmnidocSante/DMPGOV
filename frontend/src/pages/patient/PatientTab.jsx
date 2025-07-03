@@ -82,22 +82,49 @@ export default function PatientTab() {
   const fetchData = async () => {
     try {
       const [patientResponse, imageResponse, rdvResponse] = await Promise.all([
-        instance.get(`/api/patient/${id}`),
-        instance.get(`/api/patient/${id}/image`, { responseType: "blob" }),
-        instance.get(`/api/rdv/latest/${id}`),
+        instance.get(`/api/patient/${id}`, { timeout: 3000 }),
+        instance.get(`/api/patient/${id}/image`, {
+          responseType: "blob",
+          timeout: 3000,
+        }),
+        // Use `validateStatus` to prevent Axios from throwing an error on 404 for rdvResponse
+        // This allows you to check the status manually in the `.then()` block for this specific request
+        instance.get(`/api/rdv/latest/${id}`, {
+          timeout: 3000,
+          validateStatus: function (status) {
+            return (status >= 200 && status < 300) || status === 404; // Accept 2xx and 404
+          },
+        }),
       ]);
 
       const patientData = patientResponse.data;
 
-      if (imageResponse.status == 204) {
+      // Handle image response
+      if (imageResponse.status === 204) {
         setPatient({ ...patientData, image: null });
       } else {
         const imageData = URL.createObjectURL(imageResponse.data);
         setPatient({ ...patientData, image: imageData });
       }
 
+      // --- Handle rdvResponse specifically for 404 ---
+      if (rdvResponse.status === 404) {
+        // No upcoming appointment found
+        console.log(`No latest RDV found for patient ${id}.`);
+        setRdv(null); // Or set to a default empty object/value indicating no RDV
+        // You might want to display a message to the user here
+      } else if (rdvResponse.status === 200) {
+        // Latest RDV found, process the data
+        setRdv(rdvResponse.data);
+      } else {
+        // Handle other unexpected status codes for rdvResponse if necessary
+        console.warn(
+          `Unexpected status for RDV request: ${rdvResponse.status}`
+        );
+        setRdv(null); // Or handle as an error
+      }
+
       setStatus(patientData.status);
-      setRdv(rdvResponse.data);
 
       setValue("teguments", patientData.teguments);
       setValue("taille", patientData.taille);
@@ -106,8 +133,57 @@ export default function PatientTab() {
       setValue("atelier", patientData.atelier);
       setValue("entreprise", patientData.entreprise);
     } catch (error) {
-      if (error.response.data.message == "not allowed") {
-        navigate("/unauthorized");
+      // This catch block will now primarily handle network errors,
+      // timeouts (ECONNABORTED), or other HTTP errors not explicitly
+      // whitelisted by validateStatus for individual requests.
+
+      console.error("Error fetching data:", error);
+
+      if (axios.isAxiosError(error)) {
+        if (error.code === "ECONNABORTED") {
+          console.error("Request timed out:", error.message);
+          // Specific timeout handling:
+          // You could check error.config.url to see which request timed out
+          // and update UI accordingly (e.g., show a loading spinner for that part).
+        } else if (error.response) {
+          // The request was made and the server responded with a status code
+          // that falls out of the range of 2xx (and wasn't explicitly caught by validateStatus)
+          // or specific API errors like "not allowed"
+
+          if (
+            error.response.data &&
+            error.response.data.message === "not allowed"
+          ) {
+            navigate("/unauthorized");
+          } else if (
+            error.response.status === 401 ||
+            error.response.status === 403
+          ) {
+            // Handle unauthorized/forbidden errors (e.g., redirect to login)
+            console.error(
+              "Authentication/Authorization error:",
+              error.response.status
+            );
+            navigate("/login"); // Or appropriate unauthorized route
+          } else {
+            // General HTTP error handling
+            console.error(
+              `HTTP error ${error.response.status}:`,
+              error.response.data
+            );
+            // Display a generic error message to the user
+          }
+        } else if (error.request) {
+          // The request was made but no response was received (e.g., network down)
+          console.error("No response received from server.");
+          // Display a network error message
+        } else {
+          // Something happened in setting up the request that triggered an Error
+          console.error("Error setting up Axios request:", error.message);
+        }
+      } else {
+        // Non-Axios errors
+        console.error("An unexpected error occurred:", error);
       }
     }
   };
