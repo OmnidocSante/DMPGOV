@@ -65,6 +65,8 @@ public class RdvController {
         if (latestRdv != null) {
             return new ResponseEntity<>(latestRdv, HttpStatus.OK);
         }
-        return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        else{
+            return ResponseEntity.notFound().build();
+        }
     }
 }
