@@ -108,45 +108,47 @@ const useDoctorRdv = () => {
     }
   };
 
- const createRdv = async (rdvData) => {
-  try {
-    const response = await instance.post("/api/rdv/create-by-doctor", rdvData);
-    await fetchRdvs();
-    return true;
-  } catch (err) {
-    if (err.response) {
-      const errorData = err.response.data;
+  const createRdv = async (rdvData) => {
+    try {
+      const response = await instance.post(
+        "/api/rdv/create-by-doctor",
+        rdvData
+      );
+      await fetchRdvs();
+      return true;
+    } catch (err) {
+      if (err.response) {
+        const errorData = err.response.data;
 
-      if (errorData.errors) {
-        const errorMessages = Object.values(errorData.errors).join(" | ");
-        setError(errorMessages);
-      } else if (errorData.message) {
-        setError(errorData.message);
+        if (errorData.errors) {
+          const errorMessages = Object.values(errorData.errors).join(" | ");
+          setError(errorMessages);
+        } else if (errorData.message) {
+          setError(errorData.message);
+        } else {
+          setError("Une erreur inconnue est survenue.");
+        }
+
+        console.error("Erreur côté serveur:", errorData);
+      } else if (err.request) {
+        setError("Le serveur ne répond pas. Veuillez réessayer plus tard.");
+        console.error("Pas de réponse du serveur:", err.request);
       } else {
-        setError("Une erreur inconnue est survenue.");
+        setError("Erreur inattendue: " + err.message);
+        console.error("Erreur inattendue:", err);
       }
 
-      console.error("Erreur côté serveur:", errorData);
-    } else if (err.request) {
-      setError("Le serveur ne répond pas. Veuillez réessayer plus tard.");
-      console.error("Pas de réponse du serveur:", err.request);
-    } else {
-      setError("Erreur inattendue: " + err.message);
-      console.error("Erreur inattendue:", err);
+      // Wait 1 second, then clear error and return true
+      await new Promise((resolve) => {
+        setTimeout(() => {
+          setError("");
+          resolve();
+        }, 1000);
+      });
+
+      return true;
     }
-
-    // Wait 1 second, then clear error and return true
-    await new Promise((resolve) => {
-      setTimeout(() => {
-        setError("");
-        resolve();
-      }, 1000);
-    });
-
-    return true;
-  }
-};
-
+  };
 
   const updateRdvStatus = async (rdvId, status) => {
     try {
@@ -548,7 +550,7 @@ export default function DoctorDashboard() {
 
           {/* Filter Results Info */}
           <div className="mt-4 text-sm text-gray-600">
-            Showing {filteredRdvs.length} of {rdvs.length} appointments
+            Affichage de {filteredRdvs.length} sur {rdvs.length} rendez-vous
             {searchTerm && (
               <span className="ml-2">
                 • Recherche pour : "<strong>{searchTerm}</strong>"
@@ -710,7 +712,7 @@ export default function DoctorDashboard() {
 
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Date & Time
+                        Date & Heure
                       </label>
                       <input
                         type="datetime-local"
@@ -725,7 +727,9 @@ export default function DoctorDashboard() {
 
                   <div className="flex justify-end space-x-4 mt-6">
                     <button
-                      onClick={() => {setShowRdvModal(false)}}
+                      onClick={() => {
+                        setShowRdvModal(false);
+                      }}
                       className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                     >
                       Annuler
