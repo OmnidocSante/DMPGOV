@@ -157,8 +157,23 @@ public class RdvService {
     }
 
     public RdvRecord getLatestRdv(Long id) {
-        Rdv rdv = rdvRepo.findNextPlannedRdvByPatientId(StatusRDV.PLANIFIE, id).getFirst();
-        return new RdvRecord(rdv.getId(), rdv.getDate(), rdv.getPatient().getUser().getNom(), rdv.getPatient().getUser().getPrénom(), rdv.getMedecin().getUser().getNom(), rdv.getMedecin().getUser().getPrénom(), rdv.getStatusRDV(), rdv.getPatient().getId());
+        List<Rdv> rdvs = rdvRepo.findNextPlannedRdvByPatientId(StatusRDV.PLANIFIE, id);
+
+        if (rdvs.isEmpty()) {
+            return null;
+        } else {
+            Rdv rdv = rdvs.getFirst();
+            return new RdvRecord(
+                    rdv.getId(),
+                    rdv.getDate(),
+                    rdv.getPatient().getUser().getNom(),
+                    rdv.getPatient().getUser().getPrénom(),
+                    rdv.getMedecin().getUser().getNom(),
+                    rdv.getMedecin().getUser().getPrénom(),
+                    rdv.getStatusRDV(),
+                    rdv.getPatient().getId()
+            );
+        }
     }
 
 
