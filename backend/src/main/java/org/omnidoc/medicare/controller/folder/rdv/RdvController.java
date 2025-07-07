@@ -10,7 +10,6 @@ import org.omnidoc.medicare.service.rdv.RdvService;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.util.List;
 
 @RestController
@@ -38,6 +37,21 @@ public class RdvController {
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 
+    @PostMapping("/mass-create")
+    public ResponseEntity<Void> massCreateRdvs(@Valid @RequestBody List<RdvRequest> rdvRequests) {
+        rdvService.createRdvs(rdvRequests);
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
+    @PostMapping("/mass-create-by-doctor")
+    public ResponseEntity<Void> massCreateRdvByDoctor(
+            @Valid @RequestBody List<RdvRequest> rdvRequests,
+            @RequestHeader("Authorization") String jwt
+    ) {
+        rdvService.massCreateRdvByDoctor(rdvRequests, jwt);
+        return new ResponseEntity<>(HttpStatus.CREATED);
+    }
+
     @GetMapping("/all")
     public ResponseEntity<List<RdvRecord>> getAllAppointments() {
         List<RdvRecord> appointments = rdvService.getAllAppointments();
@@ -60,7 +74,7 @@ public class RdvController {
     }
 
     @GetMapping("/latest/{patientId}")
-    public ResponseEntity<RdvRecord> getLatestRdv(@PathVariable Long patientId) {
+    public ResponseEntity<RdvRecord> getLatestRdv(@PathVariable Long patientId) throws Exception {
         RdvRecord latestRdv = rdvService.getLatestRdv(patientId);
         if (latestRdv != null) {
             return new ResponseEntity<>(latestRdv, HttpStatus.OK);

@@ -15,7 +15,6 @@ public interface UserRepo extends JpaRepository<User, Long> {
 
     Boolean existsByEmail(String email);
 
-    Boolean existsByCinId(String cinId);
 
 
     Boolean existsByTelephone(@NotNull(message = "Phone number is required") String telephone);

@@ -37,12 +37,42 @@ public class PatientService {
     public PatientRecord getPatient(Long patientId) throws Exception {
         accessService.verifyAccess(patientId);
 
-        Patient patient = patientRepo.findById(patientId).orElseThrow(() -> new ApiException("Not found"));
-        User user = patient.getUser();
-        UserRecord userRecord = new UserRecord(user.getId(), user.getNom(), user.getPrénom(), user.getSexe(), user.getDateNaissance(), user.getCinId(), user.getVille(), user.getAdresse(), user.getTelephone(), user.getEmail(), user.getRole(), user.getDateEntree(), user.getProfession());
-        return new PatientRecord(user.getPatient().getId(), userRecord, patient.getStatus(), Util.decryptIfNotNull(patient.getTeguments()), Util.decryptIfNotNull(patient.getTaille()), Util.decryptIfNotNull(patient.getPoids()), Util.decryptIfNotNull(patient.getPerimetreThoracique()), patient.getPlanMedical(), Util.decryptIfNotNull(patient.getAtelier()), Util.decryptIfNotNull(patient.getEntreprise()));
+        Patient patient = patientRepo.findById(patientId)
+                .orElseThrow(() -> new ApiException("Not found"));
 
+        User user = patient.getUser();
+
+        UserRecord userRecord = new UserRecord(
+                user.getId(),
+                Util.decryptIfNotNull(user.getNom()),
+                Util.decryptIfNotNull(user.getPrénom()),
+                user.getSexe(),
+                user.getDateNaissance(),
+                Util.decryptIfNotNull(user.getMatriculeId()),
+                user.getVille(),
+                Util.decryptIfNotNull(user.getAdresse()),
+                user.getTelephone(),
+                user.getEmail(),
+                user.getRole(),
+                user.getDateEntree(),
+                user.getProfession(),
+                user.getCinId()
+        );
+
+        return new PatientRecord(
+                user.getPatient().getId(),
+                userRecord,
+                patient.getStatus(),
+                Util.decryptIfNotNull(patient.getTeguments()),
+                Util.decryptIfNotNull(patient.getTaille()),
+                Util.decryptIfNotNull(patient.getPoids()),
+                Util.decryptIfNotNull(patient.getPerimetreThoracique()),
+                patient.getPlanMedical(),
+                Util.decryptIfNotNull(patient.getAtelier()),
+                Util.decryptIfNotNull(patient.getEntreprise())
+        );
     }
+
 
     public void changeStatusPatient(Long patientId, Status status) {
         Patient patient = patientRepo.findById(patientId).orElseThrow(() -> new ApiException("patient not found"));

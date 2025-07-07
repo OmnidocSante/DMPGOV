@@ -29,44 +29,40 @@ public class User implements UserDetails {
     private Long id;
 
 
-    @NotBlank(message = "Nom is required")
     @Column(nullable = false)
     private String nom;
 
-    @NotBlank(message = "Prénom is required")
     @Column(nullable = false)
     private String prénom;
 
-    @NotNull(message = "Sexe is required")
     @Column(nullable = false)
     private Character sexe;
 
-    @NotNull(message = "Date de naissance is required")
-    @Past(message = "Date must be in the past")
     @Column(nullable = false)
     private Date dateNaissance;
 
-    @NotBlank(message = "CIN is required")
-    @Pattern(regexp = "^[A-Z]{1,2}\\d{6}$", message = "Invalid CIN format (e.g., A123456)")
+
     @Column(nullable = false)
     private String cinId;
+
+
+
+
+    @Column(nullable = false,name = "matricule_id")
+    private String matriculeId;
 
     @Column(nullable = false)
     @Enumerated(value = EnumType.STRING)
     private Ville ville;
 
-    @NotBlank(message = "Address is required")
     @Column(nullable = false)
     private String adresse;
 
 
-    @NotNull(message = "Phone number is required")
     @Column(nullable = false)
     private String telephone;
 
 
-    @NotBlank(message = "Email is required")
-    @Email(message = "Invalid email format")
     @Column(nullable = false, unique = true)
     private String email;
 
@@ -86,7 +82,6 @@ public class User implements UserDetails {
     @Column(unique = true)
     private String passwordResetToken;
 
-    @Past(message = "Date must be in the past")
     @Column(nullable = false)
     private Date dateEntree;
 

@@ -57,20 +57,34 @@ public class HistoriqueStatusService {
 
     public List<HistoriqueStatusRecord> getStatus(Long jockeyId) {
         List<HistoriqueStatus> historiqueStatuses = historiqueStatusRepo.findHistoriqueStatusesByPatient_User_Id(jockeyId);
+
         return historiqueStatuses.stream().map(historiqueStatus -> {
             try {
                 String medecinNom = "Status";
                 String medecinPrenom = "Premier";
+
                 if (historiqueStatus.getMedecin() != null && historiqueStatus.getMedecin().getUser() != null) {
-                    medecinNom = historiqueStatus.getMedecin().getUser().getNom();
-                    medecinPrenom = historiqueStatus.getMedecin().getUser().getPrénom();
+                    medecinNom = Util.decryptIfNotNull(historiqueStatus.getMedecin().getUser().getNom());
+                    medecinPrenom = Util.decryptIfNotNull(historiqueStatus.getMedecin().getUser().getPrénom());
                 }
-                return new HistoriqueStatusRecord(medecinNom, medecinPrenom, historiqueStatus.getPatient().getUser().getNom(), historiqueStatus.getPatient().getUser().getPrénom(), historiqueStatus.getDate(), Util.decryptIfNotNull(historiqueStatus.getStatus()));
+
+                String patientNom = Util.decryptIfNotNull(historiqueStatus.getPatient().getUser().getNom());
+                String patientPrenom = Util.decryptIfNotNull(historiqueStatus.getPatient().getUser().getPrénom());
+
+                return new HistoriqueStatusRecord(
+                        medecinNom,
+                        medecinPrenom,
+                        patientNom,
+                        patientPrenom,
+                        historiqueStatus.getDate(),
+                        Util.decryptIfNotNull(historiqueStatus.getStatus())
+                );
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
         }).toList();
     }
+
 
     public record HistoriqueStatusRecord(String doctorName, String doctorLastName, String patientName,
                                          String patientLastName, LocalDateTime date, String status) {

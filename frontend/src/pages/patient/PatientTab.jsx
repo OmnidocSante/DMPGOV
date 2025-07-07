@@ -27,6 +27,7 @@ import {
   Ear,
   Dumbbell,
   Briefcase,
+  Rotate3D,
 } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
@@ -38,6 +39,7 @@ import CertificatePDF from "../admin/Certificate";
 import instance from "../auth/AxiosInstance";
 import useUser from "../auth/useUser";
 import { planMedicalOptions, Status } from "@/enums/enums";
+import { BiHealth } from "react-icons/bi";
 
 export default function PatientTab() {
   const user = useUser();
@@ -283,6 +285,8 @@ export default function PatientTab() {
     localStorage.removeItem("token");
     navigate("/");
   };
+  console.log(patient);
+  
 
   const sendCertificate = async () => {
     const response = await instance.get("/api/users/user");
@@ -962,14 +966,14 @@ export default function PatientTab() {
               className="bg-gradient-to-br from-indigo-50 to-indigo-100 p-6 rounded-xl shadow-sm border border-indigo-200 cursor-pointer transition-all hover:shadow-md"
             >
               <div className="flex justify-between items-start mb-4">
-                <FileText className="w-8 h-8 text-indigo-600" />
+                <Rotate3D className="w-8 h-8 text-indigo-600" />
                 <ChevronRight className="w-5 h-5 text-indigo-400" />
               </div>
               <h3 className="text-lg font-semibold text-indigo-800 mb-1">
-                Conclusion
+                Mode de Vie
               </h3>
               <p className="text-sm text-indigo-600">
-                Déterminer si le patient est apte ou non apte
+                Informations sur les habitudes de vie du patient 
               </p>
             </motion.div>
             <motion.div

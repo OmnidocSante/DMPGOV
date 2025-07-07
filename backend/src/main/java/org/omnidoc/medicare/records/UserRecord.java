@@ -11,12 +11,13 @@ public record UserRecord(
         String prénom,
         Character sexe,
         Date dateNaissance,
-        String cinId,
+        String matriculeId,
         Ville ville,
         String adresse,
         String telephone,
         String email,
         Role role,
         Date dateEntree,
-        String profession
+        String profession,
+        String cinId
 ) {}

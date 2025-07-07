@@ -919,7 +919,7 @@ export default function DoctorDashboard() {
             localStorage.removeItem("token"), navigate("/");
           }}
           className={`w-fit flex items-center px-6 py-3 text-left transition-colors
-                 text-gray-600 hover:bg-gray-50 hover:text-gray-900 absolute bottom-8 left-0`}
+                 text-gray-600 hover:bg-gray-50 hover:text-red-500/80 fixed bottom-8 left-0`}
         >
           <LogOut className="h-5 w-5 mr-3" />
           Déconnexion

@@ -7,6 +7,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.hibernate.annotations.BatchSize;
 import org.omnidoc.medicare.entity.users.Medecin;
 import org.omnidoc.medicare.entity.users.Patient;
 import org.omnidoc.medicare.enums.StatusRDV;

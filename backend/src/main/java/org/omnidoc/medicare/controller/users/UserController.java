@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.omnidoc.medicare.entity.users.User;
 import org.omnidoc.medicare.exceptions.ApiException;
 import org.omnidoc.medicare.service.users.UserService;
+import org.omnidoc.medicare.utils.Util;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -24,7 +25,7 @@ public class UserController {
         return ResponseEntity.ok(users);
     }
     @GetMapping("/user")
-    public ResponseEntity<HashMap<String,String>> getUser(@RequestHeader("Authorization") String jwt){
+    public ResponseEntity<HashMap<String,String>> getUser(@RequestHeader("Authorization") String jwt) throws Exception {
         return ResponseEntity.ok(userService.getUserName(jwt));
     }
 
@@ -39,6 +40,7 @@ public class UserController {
     @PostMapping
     public ResponseEntity<User> createUser(@RequestBody User user) {
         try {
+
             User savedUser = userService.saveUser(user);
             return new ResponseEntity<>(savedUser, HttpStatus.CREATED);
         } catch (ApiException e) {

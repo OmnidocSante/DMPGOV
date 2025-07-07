@@ -15,6 +15,7 @@ import {
   Search,
   History,
   LogOut,
+  Minus,
 } from "lucide-react";
 import instance from "../auth/AxiosInstance";
 import { VILLES } from "@/enums/enums";
@@ -87,7 +88,6 @@ const useUsers = () => {
 
   const createUser = async (userData) => {
     try {
-
       const response = await instance.post("/api/users", userData);
       if (response.data) {
         await fetchUsers();
@@ -173,11 +173,83 @@ export default function AdminDashboard() {
   const [editForm, setEditForm] = useState({});
 
   const [showRdvModal, setShowRdvModal] = useState(false);
-  const [rdvForm, setRdvForm] = useState({
-    patientId: "",
-    medecinId: "",
-    date: "",
-  });
+  // const [isLoading, setIsLoading] = useState(false);
+
+  const [selectedDoctor, setSelectedDoctor] = useState("");
+  const [selectedPatients, setSelectedPatients] = useState([]);
+  // const [selectedDate, setSelectedDate] = useState("");
+  const [startTime, setStartTime] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [patientSearchTermFilter, setPatientSearchTermFilter] = useState("");
+
+  function handleDoctorChange(e) {
+    setSelectedDoctor(e.target.value);
+    setSelectedPatients([]);
+  }
+
+  function handlePatientToggle(e) {
+    const id = Number.parseInt(e.target.value);
+
+    setSelectedPatients((prev) =>
+      prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
+    );
+  }
+
+  function handleDateChange(e) {
+    setSelectedDate(e.target.value);
+  }
+
+  function handleStartTimeChange(e) {
+    setStartTime(e.target.value);
+  }
+
+  console.log(selectedPatients);
+  console.log(selectedDoctor);
+
+  async function handleCreateRdv() {
+    setIsLoading(true);
+    try {
+      const base = new Date(`${selectedDate}T${startTime}`);
+      const rdvPayload = selectedPatients.map((patientId, idx) => {
+        const dt = new Date(base.getTime() + idx * 10 * 60 * 1000);
+        return {
+          medecinId: selectedDoctor,
+          patientId,
+          date: dt.toISOString(),
+        };
+      });
+      console.log("rdvPayload", rdvPayload);
+
+      await instance.post("/api/rdv/mass-create", rdvPayload);
+      await fetchRdvs();
+      setSelectedDoctor("");
+      setSelectedPatients([]);
+      setSelectedDate("");
+      setStartTime("");
+      setShowRdvModal(false);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  function resetModal() {
+    setSelectedDoctor(null);
+    setSelectedPatients([]);
+    setSelectedDate("");
+    setStartTime("");
+    setShowRdvModal(false);
+  }
+
+  // const [rdvForm, setRdvForm] = useState({
+  //   patientId: "",
+  //   medecinId: "",
+  //   date: "",
+  // });
+  // const [rdvForms, setRdvForms] = useState([
+  //   { patientId: "", medecinId: "", date: "" },
+  // ]);
 
   const [showStatusModal, setShowStatusModal] = useState(false);
   const [selectedRdv, setSelectedRdv] = useState(null);
@@ -190,17 +262,6 @@ export default function AdminDashboard() {
   const [selectedPatientId, setSelectedPatientId] = useState("");
   const [patientSearchTerm, setPatientSearchTerm] = useState("");
   const [selectedCity, setSelectedCity] = useState("ALL");
-
-  const handleCreateRdv = async () => {
-    try {
-      await instance.post("/api/rdv/create", rdvForm);
-      await fetchRdvs();
-      setShowRdvModal(false);
-      setRdvForm({ patientId: "", medecinId: "", dateTime: "" });
-    } catch (err) {
-      console.error("Error creating RDV:", err);
-    }
-  };
 
   const {
     users,
@@ -228,7 +289,6 @@ export default function AdminDashboard() {
       selectedCity === "ALL"
         ? patients
         : patients.filter((j) => j.ville === selectedCity);
-
 
     // Calculate jockey aptitude data
     const aptes = filteredJockeys.filter(
@@ -339,6 +399,8 @@ export default function AdminDashboard() {
         ]
       : [];
 
+  const [disabled, setDisabled] = useState(false);
+
   const handleEditUser = (user) => {
     setSelectedUser(user);
     setEditForm({
@@ -353,16 +415,23 @@ export default function AdminDashboard() {
       email: user.email,
       role: user.role,
       profession: user.profession || "",
+      matriculeId: user.matriculeId,
     });
     setShowUserModal(true);
   };
 
   const handleSaveUser = async () => {
+    setDisabled(true);
+    if (!validateForm()) {
+      return;
+    }
     if (selectedUser) {
       const success = await updateUser(selectedUser.id, editForm);
       if (success) {
         setShowUserModal(false);
         setSelectedUser(null);
+        setFormErrors({});
+        setDisabled(false);
       }
     }
   };
@@ -373,13 +442,18 @@ export default function AdminDashboard() {
     }
   };
 
-
   const handleCreateUser = async () => {
-    
+    setDisabled(true);
+
+    if (!validateForm()) {
+      return; // Stop if validation fails
+    }
     const success = await createUser(editForm);
     if (success) {
       setShowCreateModal(false);
       setEditForm({});
+      setFormErrors({});
+      setDisabled(false);
     }
   };
 
@@ -396,6 +470,7 @@ export default function AdminDashboard() {
       email: "",
       role: "PATIENT",
       profession: "",
+      matriculeId: "",
     });
   };
 
@@ -457,6 +532,78 @@ export default function AdminDashboard() {
     if (patientId) {
       fetchPatientHistory(patientId);
     }
+  };
+
+  const [formErrors, setFormErrors] = useState({}); // State to hold validation errors
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    setEditForm((prev) => ({ ...prev, [name]: value }));
+    // Clear the error for this field as the user types
+    if (formErrors[name]) {
+      setFormErrors((prev) => ({ ...prev, [name]: undefined }));
+    }
+  };
+
+  const validateForm = () => {
+    let erreurs = {};
+    let estValide = true;
+
+    // Vérification des champs obligatoires
+    if (!editForm.nom || editForm.nom.trim() === "") {
+      erreurs.nom = "Le nom est requis.";
+      estValide = false;
+    }
+    if (!editForm.prénom || editForm.prénom.trim() === "") {
+      erreurs.prénom = "Le prénom est requis.";
+      estValide = false;
+    }
+    if (!editForm.email || editForm.email.trim() === "") {
+      erreurs.email = "L'adresse email est requise.";
+      estValide = false;
+    } else if (!/\S+@\S+\.\S+/.test(editForm.email)) {
+      erreurs.email = "L'adresse email est invalide.";
+      estValide = false;
+    }
+    if (!editForm.telephone || editForm.telephone.trim() === "") {
+      erreurs.telephone = "Le numéro de téléphone est requis.";
+      estValide = false;
+    }
+    if (!editForm.sexe) {
+      erreurs.sexe = "Le sexe est requis.";
+      estValide = false;
+    }
+    if (!editForm.dateNaissance || editForm.dateNaissance.trim() === "") {
+      erreurs.dateNaissance = "La date de naissance est requise.";
+      estValide = false;
+    }
+    if (!editForm.cinId || editForm.cinId.trim() === "") {
+      erreurs.cinId = "Le numéro de CIN est requis.";
+      estValide = false;
+    }
+    if (!editForm.matriculeId || editForm.matriculeId.trim() === "") {
+      erreurs.matriculeId = "Le matricule est requis.";
+      estValide = false;
+    }
+    if (!editForm.ville || editForm.ville.trim() === "") {
+      erreurs.ville = "La ville est requise.";
+      estValide = false;
+    }
+    if (!editForm.adresse || editForm.adresse.trim() === "") {
+      erreurs.adresse = "L'adresse est requise.";
+      estValide = false;
+    }
+    if (!editForm.role) {
+      erreurs.role = "Le rôle est requis.";
+      estValide = false;
+    }
+    if (!editForm.profession || editForm.profession.trim() === "") {
+      erreurs.profession = "La profession est requise.";
+      estValide = false;
+    }
+
+    setFormErrors(erreurs);
+    return estValide;
   };
 
   const renderDashboard = () => {
@@ -606,7 +753,7 @@ export default function AdminDashboard() {
           className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Create User
+          Créer un utilisateur
         </button>
       </div>
 
@@ -703,442 +850,509 @@ export default function AdminDashboard() {
     const doctors = users.filter((user) => user.role === "MEDECIN");
 
     return (
-      <div className="space-y-6">
-        <div className="flex justify-between items-center">
-          <h1 className="text-3xl font-bold text-gray-900">
-            Gestion des rendez-vous
-          </h1>
+      <>
+        <div className="space-y-6">
+          <div className="flex justify-between items-center">
+            <h1 className="text-3xl font-bold text-gray-900">
+              Gestion des rendez-vous
+            </h1>
 
-          <button
-            onClick={() => setShowRdvModal(true)}
-            className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-          >
-            <Plus className="h-4 w-4 mr-2" />
-            Créer un RDV
-          </button>
-        </div>
+            <button
+              onClick={() => setShowRdvModal(true)}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Créer des rendez-vous
+            </button>
+          </div>
 
-        {/* Filter Section */}
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">
-            Filtrer les rendez-vous
-          </h3>
+          {/* Filter Section */}
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <h3 className="text-lg font-semibold text-gray-900 mb-4">
+              Filtrer les rendez-vous
+            </h3>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            {/* Search by Name */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Rechercher par nom du patient ou du médecin
-              </label>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              {/* Search by Name */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Rechercher par nom du patient ou du médecin
+                </label>
 
-              <div className="relative">
+                <div className="relative">
+                  <input
+                    type="text"
+                    placeholder="Entrez le nom du patient ou du médecin..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+                </div>
+              </div>
+
+              {/* Filter by Date */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Filtrer par date
+                </label>
+
                 <input
-                  type="text"
-                  placeholder="Entrez le nom du patient ou du médecin..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full px-3 py-2 pl-10 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  type="date"
+                  value={selectedDate}
+                  onChange={(e) => setSelectedDate(e.target.value)}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
-                <Search className="absolute left-3 top-2.5 h-4 w-4 text-gray-400" />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-700">
+                  Actions
+                </label>
+                <div className="flex space-x-2">
+                  <button
+                    onClick={handleSearch}
+                    className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  >
+                    Rechercher
+                  </button>
+                  <button
+                    onClick={clearFilters}
+                    className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                  >
+                    Effacer
+                  </button>
+                </div>
               </div>
             </div>
 
-            {/* Filter by Date */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Filtrer par date
-              </label>
-
-              <input
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            {/* Action Buttons */}
-            <div className="space-y-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Actions
-              </label>
-              <div className="flex space-x-2">
-                <button
-                  onClick={handleSearch}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                >
-                  Rechercher
-                </button>
-                <button
-                  onClick={clearFilters}
-                  className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                >
-                  Effacer
-                </button>
-              </div>
+            {/* Filter Results Info */}
+            <div className="mt-4 text-sm text-gray-600">
+              Affichage de {filteredRdvs.length} sur {rdvs.length} rendez-vous
+              {searchTerm && (
+                <span className="ml-2">
+                  • Recherche pour : "<strong>{searchTerm}</strong>"
+                </span>
+              )}
+              {selectedDate && (
+                <span className="ml-2">
+                  • Date :{" "}
+                  <strong>{new Date(selectedDate).toLocaleDateString()}</strong>
+                </span>
+              )}
             </div>
           </div>
 
-          {/* Filter Results Info */}
-          <div className="mt-4 text-sm text-gray-600">
-            Affichage de {filteredRdvs.length} sur {rdvs.length} rendez-vous
-            {searchTerm && (
-              <span className="ml-2">
-                • Recherche pour : "<strong>{searchTerm}</strong>"
-              </span>
-            )}
-            {selectedDate && (
-              <span className="ml-2">
-                • Date :{" "}
-                <strong>{new Date(selectedDate).toLocaleDateString()}</strong>
-              </span>
-            )}
-          </div>
-        </div>
-
-        {rdvsLoading ? (
-          <div className="text-center py-8">Chargement des RDVs...</div>
-        ) : rdvsError ? (
-          <div className="text-center py-8 text-red-600">
-            Error: {rdvsError}
-          </div>
-        ) : (
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="min-w-full divide-y divide-gray-200">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date et heure
-                    </th>
-
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Patient
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Docteur
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Statut
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {filteredRdvs.length === 0 ? (
+          {rdvsLoading ? (
+            <div className="text-center py-8">Chargement des RDVs...</div>
+          ) : rdvsError ? (
+            <div className="text-center py-8 text-red-600">
+              Error: {rdvsError}
+            </div>
+          ) : (
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200">
+                  <thead className="bg-gray-50">
                     <tr>
-                      <td
-                        colSpan="4"
-                        className="px-6 py-8 text-center text-gray-500"
-                      >
-                        <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                        <p>
-                          {rdvs.length === 0
-                            ? "No appointments found"
-                            : "No appointments match your search criteria"}
-                        </p>
-                      </td>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Date et heure
+                      </th>
+
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Patient
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Docteur
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Statut
+                      </th>
                     </tr>
-                  ) : (
-                    filteredRdvs.map((rdv) => (
-                      <tr key={rdv.id} className="hover:bg-gray-50">
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-900">
-                            {new Date(rdv.dateTime).toLocaleDateString()}
-                          </div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(rdv.dateTime).toLocaleTimeString()}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            {rdv.userName} {rdv.userLastName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">
-                            Dr. {rdv.doctorName} {rdv.doctorLastName}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <button
-                            onClick={() => handleStatusClick(rdv)}
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity ${
-                              rdv.statusRDV === "PLANIFIE"
-                                ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
-                                : rdv.statusRDV === "CONFIRME"
-                                ? "bg-green-100 text-green-800 hover:bg-green-200"
-                                : rdv.statusRDV === "ANNULE"
-                                ? "bg-red-100 text-red-800 hover:bg-red-200"
-                                : rdv.statusRDV === "TERMINE"
-                                ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
-                                : rdv.statusRDV === "PATIENT_ABSENT"
-                                ? "bg-orange-100 text-orange-800 hover:bg-orange-200"
-                                : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
-                            }`}
-                          >
-                            {rdv.statusRDV}
-                          </button>
+                  </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {filteredRdvs.length === 0 ? (
+                      <tr>
+                        <td
+                          colSpan="4"
+                          className="px-6 py-8 text-center text-gray-500"
+                        >
+                          <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                          <p>
+                            {rdvs.length === 0
+                              ? "No appointments found"
+                              : "No appointments match your search criteria"}
+                          </p>
                         </td>
                       </tr>
-                    ))
-                  )}
-                </tbody>
-              </table>
+                    ) : (
+                      filteredRdvs.map((rdv) => (
+                        <tr key={rdv.id} className="hover:bg-gray-50">
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm text-gray-900">
+                              {new Date(rdv.dateTime).toLocaleDateString()}
+                            </div>
+                            <div className="text-sm text-gray-500">
+                              {new Date(rdv.dateTime).toLocaleTimeString()}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              {rdv.userName} {rdv.userLastName}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <div className="text-sm font-medium text-gray-900">
+                              Dr. {rdv.doctorName} {rdv.doctorLastName}
+                            </div>
+                          </td>
+                          <td className="px-6 py-4 whitespace-nowrap">
+                            <button
+                              onClick={() => handleStatusClick(rdv)}
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full cursor-pointer hover:opacity-80 transition-opacity ${
+                                rdv.statusRDV === "PLANIFIE"
+                                  ? "bg-blue-100 text-blue-800 hover:bg-blue-200"
+                                  : rdv.statusRDV === "CONFIRME"
+                                  ? "bg-green-100 text-green-800 hover:bg-green-200"
+                                  : rdv.statusRDV === "ANNULE"
+                                  ? "bg-red-100 text-red-800 hover:bg-red-200"
+                                  : rdv.statusRDV === "TERMINE"
+                                  ? "bg-gray-100 text-gray-800 hover:bg-gray-200"
+                                  : rdv.statusRDV === "PATIENT_ABSENT"
+                                  ? "bg-orange-100 text-orange-800 hover:bg-orange-200"
+                                  : "bg-yellow-100 text-yellow-800 hover:bg-yellow-200"
+                              }`}
+                            >
+                              {rdv.statusRDV}
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
             </div>
-          </div>
-        )}
-
-        {/* RDV Modal */}
-        <AnimatePresence>
-          {showRdvModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center z-50 p-4"
-            >
-              <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-lg shadow-xl max-w-md w-full"
-              >
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">
-                      Créer un RDV
-                    </h2>
-                    <button
-                      onClick={() => setShowRdvModal(false)}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-6 w-6" />
-                    </button>
-                  </div>
-
-                  <div className="space-y-4">
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Patient
-                      </label>
-                      <select
-                        value={rdvForm.patientId}
-                        onChange={(e) =>
-                          setRdvForm({ ...rdvForm, patientId: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Sélectionner un patient</option>
-                        {patients.map((patient) => (
-                          <option key={patient.id} value={patient.id}>
-                            {patient.prénom} {patient.nom}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Doctor
-                      </label>
-                      <select
-                        value={rdvForm.medecinId}
-                        onChange={(e) =>
-                          setRdvForm({ ...rdvForm, medecinId: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="">Select Doctor</option>
-                        {doctors.map((doctor) => (
-                          <option key={doctor.id} value={doctor.id}>
-                            Dr. {doctor.prénom} {doctor.nom}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
-                        Date & Time
-                      </label>
-                      <input
-                        type="datetime-local"
-                        value={rdvForm.date}
-                        onChange={(e) =>
-                          setRdvForm({ ...rdvForm, date: e.target.value })
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="flex justify-end space-x-4 mt-6">
-                    <button
-                      onClick={() => setShowRdvModal(false)}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleCreateRdv}
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Create
-                    </button>
-                  </div>
-                </div>
-              </motion.div>
-            </motion.div>
           )}
-        </AnimatePresence>
 
-        {/* Status Modal */}
-        <AnimatePresence>
-          {showStatusModal && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center z-50 p-4"
-            >
+          {/* RDV Modal */}
+          <AnimatePresence>
+            {showRdvModal && (
               <motion.div
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0.95, opacity: 0 }}
-                className="bg-white rounded-lg shadow-xl max-w-md w-full"
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4"
               >
-                <div className="p-6">
-                  <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-900">
-                      Mettre à jour le statut du rendez-vous
-                    </h2>
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="bg-white rounded-lg shadow-xl max-w-3xl w-full"
+                >
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-bold text-gray-900">
+                        Créer des RDVs
+                      </h2>
+                      <button
+                        onClick={resetModal}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-6 w-6" />
+                      </button>
+                    </div>
 
-                    <button
-                      onClick={() => {
-                        setShowStatusModal(false);
-                        setSelectedRdv(null);
-                        setNewStatus("");
-                      }}
-                      className="text-gray-400 hover:text-gray-600"
-                    >
-                      <X className="h-6 w-6" />
-                    </button>
-                  </div>
+                    {/* Doctor selector */}
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Médecin
+                      </label>
+                      <select
+                        value={selectedDoctor}
+                        onChange={handleDoctorChange}
+                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                      >
+                        <option value="">Sélectionner</option>
+                        {doctors.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            Dr. {d.prénom} {d.nom}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  {selectedRdv && (
-                    <div className="space-y-4">
-                      <div className="bg-gray-50 p-4 rounded-lg">
-                        <h3 className="font-medium text-gray-900 mb-2">
-                          Détails RDV
-                        </h3>
-                        <p className="text-sm text-gray-600">
-                          <strong>Patient:</strong> {selectedRdv.userName}{" "}
-                          {selectedRdv.userLastName}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          <strong>Doctor:</strong> Dr. {selectedRdv.doctorName}{" "}
-                          {selectedRdv.doctorLastName}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          <strong>Date:</strong>{" "}
-                          {new Date(selectedRdv.dateTime).toLocaleDateString()}{" "}
-                          at{" "}
-                          {new Date(selectedRdv.dateTime).toLocaleTimeString()}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                          <strong>Statut actuel :</strong>
-                          <span
-                            className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              selectedRdv.statusRDV === "PLANIFIE"
-                                ? "bg-blue-100 text-blue-800"
-                                : selectedRdv.statusRDV === "CONFIRME"
-                                ? "bg-green-100 text-green-800"
-                                : selectedRdv.statusRDV === "ANNULE"
-                                ? "bg-red-100 text-red-800"
-                                : selectedRdv.statusRDV === "TERMINE"
-                                ? "bg-gray-100 text-gray-800"
-                                : selectedRdv.statusRDV === "PATIENT_ABSENT"
-                                ? "bg-orange-100 text-orange-800"
-                                : "bg-yellow-100 text-yellow-800"
-                            }`}
-                          >
-                            {selectedRdv.statusRDV}
-                          </span>
-                        </p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">
-                          Nouveau statut
+                    {/* Patients multi-checkbox */}
+                    {selectedDoctor && (
+                      <div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Patients
                         </label>
 
-                        <select
-                          value={newStatus}
-                          onChange={(e) => setNewStatus(e.target.value)}
-                          className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                          <option value="PLANIFIE">PLANIFIE</option>
-                          <option value="TERMINE">TERMINE</option>
-                          <option value="ANNULE">ANNULE</option>
-                          <option value="PATIENT_ABSENT">PATIENT_ABSENT</option>
-                        </select>
-                      </div>
+                        {/* Search input */}
+                        <input
+                          type="text"
+                          placeholder="Rechercher par nom, prénom ou matricule..."
+                          value={patientSearchTermFilter}
+                          onChange={(e) =>
+                            setPatientSearchTermFilter(e.target.value)
+                          }
+                          className="w-full mb-2 px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                        />
 
-                      <div className="bg-blue-50 p-3 rounded-lg">
-                        <p className="text-sm text-blue-800">
-                          <strong>Significations des statuts :</strong>
-                        </p>
-                        <ul className="text-xs text-blue-700 mt-1 space-y-1">
-                          <li>
-                            • <strong>PLANIFIÉ :</strong> Le rendez-vous est
-                            programmé
-                          </li>
-                          <li>
-                            • <strong>TERMINE :</strong> Le rendez-vous s’est
-                            déroulé avec succès
-                          </li>
-                          <li>
-                            • <strong>ANNULÉ :</strong> Le rendez-vous a été
-                            annulé
-                          </li>
-                          <li>
-                            • <strong>PATIENT_ABSENT :</strong> Le patient ne
-                            s’est pas présenté
-                          </li>
-                        </ul>
+                        {/* Filtered checkbox list */}
+                        <div className="border rounded-md p-2 max-h-40 overflow-auto">
+                          {patients
+                            .filter(
+                              (p) =>
+                                (!patientSearchTermFilter ||
+                                  `${p.prénom} ${p.nom}`
+                                    .toLowerCase()
+                                    .includes(
+                                      patientSearchTermFilter.toLowerCase()
+                                    ) ||
+                                  (p.matriculeId &&
+                                    p.matriculeId
+                                      .toLowerCase()
+                                      .includes(
+                                        patientSearchTermFilter.toLowerCase()
+                                      ))) &&
+                                (p.medecinId === selectedDoctor || true)
+                            )
+                            .map((p) => (
+                              <label
+                                key={p.id}
+                                className="flex items-center mb-1"
+                              >
+                                <input
+                                  type="checkbox"
+                                  value={p.id}
+                                  checked={selectedPatients.includes(p.id)}
+                                  onChange={handlePatientToggle}
+                                  className="mr-2"
+                                />
+                                {p.prénom} {p.nom}
+                                {p.matriculeId && (
+                                  <span className="ml-2 text-xs text-gray-400">
+                                    ({p.matriculeId})
+                                  </span>
+                                )}
+                              </label>
+                            ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Date and starting time */}
+                    <div className="grid grid-cols-2 gap-4 mb-6">
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Date
+                        </label>
+                        <input
+                          type="date"
+                          value={selectedDate}
+                          onChange={handleDateChange}
+                          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-sm font-medium text-gray-700 mb-1">
+                          Heure début
+                        </label>
+                        <input
+                          type="time"
+                          value={startTime}
+                          onChange={handleStartTimeChange}
+                          className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                        />
                       </div>
                     </div>
-                  )}
 
-                  <div className="flex justify-end space-x-4 mt-6">
-                    <button
-                      onClick={() => {
-                        setShowStatusModal(false);
-                        setSelectedRdv(null);
-                        setNewStatus("");
-                      }}
-                      className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      onClick={handleStatusUpdate}
-                      disabled={
-                        !newStatus || newStatus === selectedRdv?.statusRDV
-                      }
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Save className="h-4 w-4 mr-2" />
-                      Mettre à jour le statut
-                    </button>
+                    {/* Actions */}
+                    <div className="flex justify-end space-x-4">
+                      <button
+                        onClick={() => setShowRdvModal(false)}
+                        className="px-4 py-2 border rounded-md text-gray-700 hover:bg-gray-50"
+                      >
+                        Annuler
+                      </button>
+                      <button
+                        onClick={handleCreateRdv}
+                        disabled={
+                          !selectedDoctor ||
+                          selectedPatients.length === 0 ||
+                          !selectedDate ||
+                          !startTime ||
+                          isLoading
+                        }
+                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Créer RDVs
+                      </button>
+                    </div>
                   </div>
-                </div>
+                </motion.div>
               </motion.div>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
+            )}
+          </AnimatePresence>
+
+          {/* Status Modal */}
+          <AnimatePresence>
+            {showStatusModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/70 bg-opacity-50 flex items-center justify-center z-50 p-4"
+              >
+                <motion.div
+                  initial={{ scale: 0.95, opacity: 0 }}
+                  animate={{ scale: 1, opacity: 1 }}
+                  exit={{ scale: 0.95, opacity: 0 }}
+                  className="bg-white rounded-lg shadow-xl max-w-md w-full"
+                >
+                  <div className="p-6">
+                    <div className="flex justify-between items-center mb-6">
+                      <h2 className="text-xl font-bold text-gray-900">
+                        Mettre à jour le statut du rendez-vous
+                      </h2>
+
+                      <button
+                        onClick={() => {
+                          setShowStatusModal(false);
+                          setSelectedRdv(null);
+                          setNewStatus("");
+                        }}
+                        className="text-gray-400 hover:text-gray-600"
+                      >
+                        <X className="h-6 w-6" />
+                      </button>
+                    </div>
+
+                    {selectedRdv && (
+                      <div className="space-y-4">
+                        <div className="bg-gray-50 p-4 rounded-lg">
+                          <h3 className="font-medium text-gray-900 mb-2">
+                            Détails RDV
+                          </h3>
+                          <p className="text-sm text-gray-600">
+                            <strong>Patient:</strong> {selectedRdv.userName}{" "}
+                            {selectedRdv.userLastName}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Doctor:</strong> Dr.{" "}
+                            {selectedRdv.doctorName}{" "}
+                            {selectedRdv.doctorLastName}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Date:</strong>{" "}
+                            {new Date(
+                              selectedRdv.dateTime
+                            ).toLocaleDateString()}{" "}
+                            at{" "}
+                            {new Date(
+                              selectedRdv.dateTime
+                            ).toLocaleTimeString()}
+                          </p>
+                          <p className="text-sm text-gray-600">
+                            <strong>Statut actuel :</strong>
+                            <span
+                              className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                                selectedRdv.statusRDV === "PLANIFIE"
+                                  ? "bg-blue-100 text-blue-800"
+                                  : selectedRdv.statusRDV === "CONFIRME"
+                                  ? "bg-green-100 text-green-800"
+                                  : selectedRdv.statusRDV === "ANNULE"
+                                  ? "bg-red-100 text-red-800"
+                                  : selectedRdv.statusRDV === "TERMINE"
+                                  ? "bg-gray-100 text-gray-800"
+                                  : selectedRdv.statusRDV === "PATIENT_ABSENT"
+                                  ? "bg-orange-100 text-orange-800"
+                                  : "bg-yellow-100 text-yellow-800"
+                              }`}
+                            >
+                              {selectedRdv.statusRDV}
+                            </span>
+                          </p>
+                        </div>
+
+                        <div>
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Nouveau statut
+                          </label>
+
+                          <select
+                            value={newStatus}
+                            onChange={(e) => setNewStatus(e.target.value)}
+                            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          >
+                            <option value="PLANIFIE">PLANIFIE</option>
+                            <option value="TERMINE">TERMINE</option>
+                            <option value="ANNULE">ANNULE</option>
+                            <option value="PATIENT_ABSENT">
+                              PATIENT_ABSENT
+                            </option>
+                          </select>
+                        </div>
+
+                        <div className="bg-blue-50 p-3 rounded-lg">
+                          <p className="text-sm text-blue-800">
+                            <strong>Significations des statuts :</strong>
+                          </p>
+                          <ul className="text-xs text-blue-700 mt-1 space-y-1">
+                            <li>
+                              • <strong>PLANIFIÉ :</strong> Le rendez-vous est
+                              programmé
+                            </li>
+                            <li>
+                              • <strong>TERMINE :</strong> Le rendez-vous s’est
+                              déroulé avec succès
+                            </li>
+                            <li>
+                              • <strong>ANNULÉ :</strong> Le rendez-vous a été
+                              annulé
+                            </li>
+                            <li>
+                              • <strong>PATIENT_ABSENT :</strong> Le patient ne
+                              s’est pas présenté
+                            </li>
+                          </ul>
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex justify-end space-x-4 mt-6">
+                      <button
+                        onClick={() => {
+                          setShowStatusModal(false);
+                          setSelectedRdv(null);
+                          setNewStatus("");
+                        }}
+                        className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        onClick={handleStatusUpdate}
+                        disabled={
+                          !newStatus || newStatus === selectedRdv?.statusRDV
+                        }
+                        className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                      >
+                        <Save className="h-4 w-4 mr-2" />
+                        Mettre à jour le statut
+                      </button>
+                    </div>
+                  </div>
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </>
     );
   };
 
@@ -1276,10 +1490,11 @@ export default function AdminDashboard() {
                   <strong>Email:</strong> {selectedPatient.email}
                 </p>
                 <p>
-                  <strong>Phone:</strong> {selectedPatient.telephone}
+                  <strong>numéro de téléphone:</strong>{" "}
+                  {selectedPatient.telephone}
                 </p>
                 <p>
-                  <strong>City:</strong> {selectedPatient.ville}
+                  <strong>Ville:</strong> {selectedPatient.ville}
                 </p>
               </div>
             </div>
@@ -1323,7 +1538,7 @@ export default function AdminDashboard() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date & Time
+                        Date & Heure
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Médecin
@@ -1416,6 +1631,7 @@ export default function AdminDashboard() {
                     setShowUserModal(false);
                     setShowCreateModal(false);
                     setSelectedUser(null);
+                    setFormErrors({}); // Clear errors when closing modal
                   }}
                   className="text-gray-400 hover:text-gray-600"
                 >
@@ -1430,12 +1646,20 @@ export default function AdminDashboard() {
                   </label>
                   <input
                     type="text"
-                    value={editForm.prénom || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, prénom: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    name="nom" // Added name attribute
+                    value={editForm.nom || ""}
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.nom
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   />
+                  {formErrors.nom && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.nom}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1444,12 +1668,20 @@ export default function AdminDashboard() {
                   </label>
                   <input
                     type="text"
-                    value={editForm.nom || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, nom: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    name="prénom" // Added name attribute
+                    value={editForm.prénom || ""}
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.prénom
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   />
+                  {formErrors.prénom && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.prénom}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1458,59 +1690,88 @@ export default function AdminDashboard() {
                   </label>
                   <input
                     type="email"
+                    name="email" // Added name attribute
                     value={editForm.email || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, email: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.email
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   />
+                  {formErrors.email && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.email}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Phone
+                    Numéro de téléphone
                   </label>
                   <input
                     type="text"
+                    name="telephone" // Added name attribute
                     value={editForm.telephone || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, telephone: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.telephone
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   />
+                  {formErrors.telephone && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.telephone}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Gender
+                    Sexe
                   </label>
                   <select
+                    name="sexe" // Added name attribute
                     value={editForm.sexe || "M"}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, sexe: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.sexe
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   >
                     <option value="M">Male</option>
                     <option value="F">Female</option>
                   </select>
+                  {formErrors.sexe && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.sexe}
+                    </p>
+                  )}
                 </div>
 
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Birth Date
+                    Date de naissance
                   </label>
                   <input
                     type="date"
+                    name="dateNaissance" // Added name attribute
                     value={editForm.dateNaissance || ""}
-                    onChange={(e) =>
-                      setEditForm({
-                        ...editForm,
-                        dateNaissance: e.target.value,
-                      })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.dateNaissance
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   />
+                  {formErrors.dateNaissance && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.dateNaissance}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1519,45 +1780,91 @@ export default function AdminDashboard() {
                   </label>
                   <input
                     type="text"
+                    name="cinId" // Added name attribute
                     value={editForm.cinId || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, cinId: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.cinId
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   />
+                  {formErrors.cinId && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.cinId}
+                    </p>
+                  )}
                 </div>
+
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    City
+                    Ville
                   </label>
                   <select
-                    onChange={(e) => {
-                      setEditForm({ ...editForm, ville: e.target.value });
-                    }}
+                    name="ville" // Added name attribute
+                    onChange={handleInputChange} // Using unified handler
                     value={editForm.ville || ""}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.ville
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   >
                     <option value="">-- Sélectionner une ville --</option>
-
                     {VILLES.map((ville) => (
                       <option key={ville.value} value={ville.value}>
                         {ville.label}
                       </option>
                     ))}
                   </select>
+                  {formErrors.ville && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.ville}
+                    </p>
+                  )}
                 </div>
-                <div className="md:col-span-2">
+
+                <div>
                   <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Address
+                    Adresse
                   </label>
                   <input
                     type="text"
+                    name="adresse" // Added name attribute
                     value={editForm.adresse || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, adresse: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.adresse
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   />
+                  {formErrors.adresse && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.adresse}
+                    </p>
+                  )}
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    N° Matricule
+                  </label>
+                  <input
+                    type="text"
+                    name="matriculeId"
+                    value={editForm.matriculeId || ""}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.matriculeId
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
+                  />
+                  {formErrors.matriculeId && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.matriculeId}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1565,20 +1872,27 @@ export default function AdminDashboard() {
                     Role
                   </label>
                   <select
+                    name="role" // Added name attribute
                     value={editForm.role || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, role: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.role
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   >
                     {/* Optional: Default prompt option */}
                     <option value="">-- Sélectionner un rôle --</option>
-
                     <option value="ADMIN">admin</option>
                     <option value="MEDECIN">docteur</option>
                     <option value="PATIENT">patient</option>
                     <option value="USER">user de consultation</option>
                   </select>
+                  {formErrors.role && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.role}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -1587,12 +1901,20 @@ export default function AdminDashboard() {
                   </label>
                   <input
                     type="text"
+                    name="profession" // Added name attribute
                     value={editForm.profession || ""}
-                    onChange={(e) =>
-                      setEditForm({ ...editForm, profession: e.target.value })
-                    }
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onChange={handleInputChange} // Using unified handler
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.profession
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
                   />
+                  {formErrors.profession && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.profession}
+                    </p>
+                  )}
                 </div>
               </div>
 
@@ -1602,6 +1924,7 @@ export default function AdminDashboard() {
                     setShowUserModal(false);
                     setShowCreateModal(false);
                     setSelectedUser(null);
+                    setFormErrors({}); // Clear errors when closing modal
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
@@ -1609,7 +1932,8 @@ export default function AdminDashboard() {
                 </button>
                 <button
                   onClick={showCreateModal ? handleCreateUser : handleSaveUser}
-                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                  className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  disabled={disabled}
                 >
                   <Save className="h-4 w-4 mr-2" />
                   {showCreateModal ? "Create" : "Save"}
@@ -1655,7 +1979,7 @@ export default function AdminDashboard() {
           localStorage.removeItem("token"), navigate("/");
         }}
         className={`w-fit flex items-center px-6 py-3 text-left transition-colors
-         text-gray-600 hover:bg-gray-50 hover:text-gray-900 absolute bottom-8 left-0`}
+         text-gray-600 hover:bg-gray-50 hover:text-red-500/80 fixed bottom-8 left-0`}
       >
         <LogOut className="h-5 w-5 mr-3" />
         Déconnexion
