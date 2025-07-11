@@ -81,6 +81,7 @@ const useDoctorRdv = () => {
     try {
       setLoading(true);
       const response = await instance.get("/api/rdv/doctor-appointments");
+
       setRdvs(response.data);
     } catch (err) {
       if (err.response) {
@@ -495,13 +496,14 @@ export default function DoctorDashboard() {
   const RDV_TYPES = [
     { label: "Aprés reprise de travail", data: "APRES_REPRISE_DE_TRAVAIL" },
     { label: "EMBAUCHE", data: "EMBAUCHE" },
-    { label: "AT", data: "AT" },
-    { label: "PP", data: "PP" },
+    { label: "Accident de Travail", data: "AT" },
+    { label: "Permission Payée", data: "PP" },
     { label: "ANNUELLE", data: "ANNUELLE" },
     { label: "DEPART", data: "DEPART" },
     { label: "SPONTANNEE", data: "SPONTANNEE" },
   ];
   console.log(rdvForm);
+  console.log(rdvs);
 
   const renderRdvManagement = () => {
     // const patients = users.filter((user) => user.role === "PATIENT");
@@ -612,6 +614,9 @@ export default function DoctorDashboard() {
                       Statut
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Type Rendez-vous
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Action
                     </th>
                   </tr>
@@ -666,6 +671,12 @@ export default function DoctorDashboard() {
                           >
                             {rdv.statusRDV}
                           </button>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {RDV_TYPES.find((type) => type.data === rdv.typeRdv)
+                              ?.label || rdv.typeRdv}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <button

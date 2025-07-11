@@ -426,8 +426,8 @@ export default function AdminDashboard() {
   const RDV_TYPES = [
     { label: "Aprés reprise de travail", data: "APRES_REPRISE_DE_TRAVAIL" },
     { label: "EMBAUCHE", data: "EMBAUCHE" },
-    { label: "AT", data: "AT" },
-    { label: "PP", data: "PP" },
+    { label: "Accident de Travail", data: "AT" },
+    { label: "Permission Payée", data: "PP" },
     { label: "ANNUELLE", data: "ANNUELLE" },
     { label: "DEPART", data: "DEPART" },
     { label: "SPONTANNEE", data: "SPONTANNEE" },
