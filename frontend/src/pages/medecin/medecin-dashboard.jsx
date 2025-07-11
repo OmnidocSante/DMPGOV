@@ -480,7 +480,7 @@ export default function DoctorDashboard() {
     setPersonSearchTerm(e.target.value);
   };
   console.log(users);
-  
+
   const filteredPatients = users.filter(
     (user) =>
       user.role === "PATIENT" &&
@@ -491,7 +491,6 @@ export default function DoctorDashboard() {
           .toLowerCase()
           .includes(personSearchTerm.toLowerCase()))
   );
-
 
   const RDV_TYPES = [
     { label: "Aprés reprise de travail", data: "APRES_REPRISE_DE_TRAVAIL" },
@@ -627,8 +626,8 @@ export default function DoctorDashboard() {
                         <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                         <p>
                           {rdvs.length === 0
-                            ? "No appointments found"
-                            : "No appointments match your search criteria"}
+                            ? "Aucun rendez-vous trouvé"
+                            : "Aucun rendez-vous ne correspond à vos critères de recherche"}
                         </p>
                       </td>
                     </tr>

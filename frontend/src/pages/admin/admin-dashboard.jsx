@@ -802,7 +802,7 @@ export default function AdminDashboard() {
                     Numéro de téléphone
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    City
+                    Ville
                   </th>
                   <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                     Actions
@@ -1003,8 +1003,8 @@ export default function AdminDashboard() {
                           <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
                           <p>
                             {rdvs.length === 0
-                              ? "No appointments found"
-                              : "No appointments match your search criteria"}
+                              ? "Aucun rendez-vous trouvé"
+                              : "Aucun rendez-vous ne correspond à vos critères de recherche"}
                           </p>
                         </td>
                       </tr>
@@ -1424,7 +1424,7 @@ export default function AdminDashboard() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Type patient name or email..."
+                  placeholder="Tapez le nom ou l'email du patient..."
                   value={patientSearchTerm}
                   onChange={(e) => {
                     setPatientSearchTerm(e.target.value);
@@ -1509,7 +1509,7 @@ export default function AdminDashboard() {
                         .includes(patientSearchTerm.toLowerCase())
                   ).length === 0 && (
                     <p className="text-sm text-gray-500 p-2">
-                      No patients found matching your search.
+                      Aucun patient ne correspond à votre recherche.
                     </p>
                   )}
                 </div>
@@ -1571,7 +1571,7 @@ export default function AdminDashboard() {
             ) : patientHistory.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <History className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p>No history records found for this patient</p>
+                <p>Aucun historique trouvé pour ce patient</p>
               </div>
             ) : (
               <div className="overflow-x-auto">

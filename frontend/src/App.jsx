@@ -474,7 +474,7 @@ export default function App() {
         <div className="container mx-auto px-4 sm:px-6 py-8 lg:px-8">
           <div>
             <p className="text-gray-400 text-sm">
-              © 2025 Omnidoc ( 1.1.0 ) Tous droits réservés.
+              © 2025 Omnidoc ( 1.2.0 ) Tous droits réservés.
             </p>
           </div>
         </div>
