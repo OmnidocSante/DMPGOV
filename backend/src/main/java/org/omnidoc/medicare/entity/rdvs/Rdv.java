@@ -11,6 +11,7 @@ import org.hibernate.annotations.BatchSize;
 import org.omnidoc.medicare.entity.users.Medecin;
 import org.omnidoc.medicare.entity.users.Patient;
 import org.omnidoc.medicare.enums.StatusRDV;
+import org.omnidoc.medicare.enums.TypeRdv;
 
 import java.time.LocalDateTime;
 
@@ -40,6 +41,9 @@ public class Rdv {
     @ManyToOne
     @JoinColumn(name = "patient_id", referencedColumnName = "id", nullable = false)
     private Patient patient;
+
+    @Enumerated(value = EnumType.STRING)
+    private TypeRdv typeRdv;
 
     @Enumerated(value = EnumType.STRING)
     private StatusRDV statusRDV = StatusRDV.PLANIFIE;

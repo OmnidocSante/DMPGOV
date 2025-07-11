@@ -24,7 +24,10 @@ public class ExamenAuditif {
     private String visionDeLoinDroit;
     private String visionDeLoinGauche;
 
+    @Column(name = "oreille_droite")
     private String oeilDroit;
+
+    @Column(name = "oreille_gauche")
     private String oeilGauche;
 
 

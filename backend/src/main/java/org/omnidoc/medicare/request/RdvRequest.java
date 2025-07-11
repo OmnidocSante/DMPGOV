@@ -1,5 +1,8 @@
 package org.omnidoc.medicare.request;
 
+import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -7,6 +10,7 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import org.omnidoc.medicare.enums.TypeRdv;
 
 import java.time.LocalDateTime;
 
@@ -24,4 +28,6 @@ public class RdvRequest {
     @NotNull(message = "La date du rendez-vous est obligatoire")
     @FutureOrPresent(message = "La date du rendez-vous doit être dans le présent ou le futur")
     private LocalDateTime date;
+
+    private TypeRdv typeRdv;
 }

@@ -55,13 +55,13 @@ public class DossierMedicaleUtil {
     }
 
 
-
     @Transactional
-    public void createDossier(User createdUser) throws Exception {
+    public void createDossier(User createdUser, String chantier) throws Exception {
         Patient patient = new Patient();
         patient.setUser(createdUser);
         patient.setStatus(Status.A_RECLASSER);
         patient.setPlanMedical(PlanMedical.NORMAL);
+        patient.setChantier(Util.encryptIfNotNull(chantier));
         patientRepo.save(patient);
 
         DossierMedicale dossierMedicale = new DossierMedicale();

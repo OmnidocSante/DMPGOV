@@ -80,6 +80,7 @@ public class RdvService {
             rdv.setDate(rdvRequest.getDate());
             rdv.setPatient(patient);
             rdv.setMedecin(medecin);
+            rdv.setTypeRdv(rdvRequest.getTypeRdv());
             rdvRepo.save(rdv);
 //            emailService.sendEmail(medecin.getUser().getEmail(), "Nouveau rendez-vous médical programmé", "Bonjour Dr " + medecin.getUser().getNom() + ",\n\n" + "Un nouveau rendez-vous a été fixé avec le jockey " + patient.getUser().getNom() + " " + patient.getUser().getPrénom() + " le " + rdv.getDate().toString() + ".\n\n" + "Merci de bien vouloir le noter dans votre agenda.\n\n" + "Cordialement,\nL'équipe Omnidoc");
 
@@ -124,6 +125,7 @@ public class RdvService {
                 rdv.setDate(rdvRequest.getDate());
                 rdv.setPatient(patient);
                 rdv.setMedecin(medecin);
+                rdv.setTypeRdv(rdvRequest.getTypeRdv());
                 rdvRepo.save(rdv);
 
 //                emailService.sendEmail(medecin.getUser().getEmail(), "Nouveau rendez-vous médical programmé", "Bonjour Dr " + medecin.getUser().getNom() + ",\n\n" + "Un nouveau rendez-vous a été fixé avec le jockey " + patient.getUser().getNom() + " " + patient.getUser().getPrénom() + " le " + rdv.getDate().toString() + ".\n\n" + "Merci de bien vouloir le noter dans votre agenda.\n\n" + "Cordialement,\nL'équipe Omnidoc");
@@ -144,16 +146,7 @@ public class RdvService {
                 String medecinNom = Util.decryptIfNotNull(rdv.getMedecin().getUser().getNom());
                 String medecinPrenom = Util.decryptIfNotNull(rdv.getMedecin().getUser().getPrénom());
 
-                return new RdvRecord(
-                        rdv.getId(),
-                        rdv.getDate(),
-                        patientNom,
-                        patientPrenom,
-                        medecinNom,
-                        medecinPrenom,
-                        rdv.getStatusRDV(),
-                        rdv.getPatient().getId()
-                );
+                return new RdvRecord(rdv.getId(), rdv.getDate(), patientNom, patientPrenom, medecinNom, medecinPrenom, rdv.getStatusRDV(), rdv.getPatient().getId(), rdv.getTypeRdv());
             } catch (Exception e) {
                 throw new RuntimeException("Decryption failed for appointment ID: " + rdv.getId(), e);
             }
@@ -164,8 +157,7 @@ public class RdvService {
     public List<RdvRecord> getDoctorAppointments(String jwt) {
         String token = jwt.substring(7);
         String username = jwtService.extractUsername(token);
-        Medecin medecin = medecinRepo.findByUser_Email(username)
-                .orElseThrow(() -> new ApiException("Doctor not found"));
+        Medecin medecin = medecinRepo.findByUser_Email(username).orElseThrow(() -> new ApiException("Doctor not found"));
 
         return rdvRepo.findRdvsByMedecin(medecin).stream().map(rdv -> {
             try {
@@ -174,16 +166,7 @@ public class RdvService {
                 String medecinNom = Util.decryptIfNotNull(rdv.getMedecin().getUser().getNom());
                 String medecinPrenom = Util.decryptIfNotNull(rdv.getMedecin().getUser().getPrénom());
 
-                return new RdvRecord(
-                        rdv.getId(),
-                        rdv.getDate(),
-                        patientNom,
-                        patientPrenom,
-                        medecinNom,
-                        medecinPrenom,
-                        rdv.getStatusRDV(),
-                        rdv.getPatient().getId()
-                );
+                return new RdvRecord(rdv.getId(), rdv.getDate(), patientNom, patientPrenom, medecinNom, medecinPrenom, rdv.getStatusRDV(), rdv.getPatient().getId(), rdv.getTypeRdv());
             } catch (Exception e) {
                 throw new RuntimeException("Decryption failed for appointment ID: " + rdv.getId(), e);
             }
@@ -222,7 +205,7 @@ public class RdvService {
             rdv.setDate(rdvRequest.getDate());
             rdv.setPatient(patient);
             rdv.setMedecin(medecin);
-
+            rdv.setTypeRdv(rdvRequest.getTypeRdv());
             rdvRepo.save(rdv);
         } catch (Exception e) {
             throw new ApiException(e.getMessage());
@@ -277,6 +260,7 @@ public class RdvService {
                 rdv.setDate(rdvRequest.getDate());
                 rdv.setPatient(patient);
                 rdv.setMedecin(medecin);
+                rdv.setTypeRdv(rdvRequest.getTypeRdv());
                 rdvRepo.save(rdv);
                 logger.info("Successfully created Rdv for patient {} with doctor {} on {}", patient.getUser().getNom(), medecin.getUser().getNom(), rdv.getDate());
 
@@ -315,7 +299,7 @@ public class RdvService {
             String patientPrenom = Util.decryptIfNotNull(rdv.getPatient().getUser().getPrénom());
             String medecinNom = Util.decryptIfNotNull(rdv.getMedecin().getUser().getNom());
             String medecinPrenom = Util.decryptIfNotNull(rdv.getMedecin().getUser().getPrénom());
-            return new RdvRecord(rdv.getId(), rdv.getDate(), patientNom, patientPrenom, medecinNom, medecinPrenom, rdv.getStatusRDV(), rdv.getPatient().getId());
+            return new RdvRecord(rdv.getId(), rdv.getDate(), patientNom, patientPrenom, medecinNom, medecinPrenom, rdv.getStatusRDV(), rdv.getPatient().getId(), rdv.getTypeRdv());
         }
     }
 

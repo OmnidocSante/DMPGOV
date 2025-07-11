@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 import instance from "../auth/AxiosInstance";
 import { VILLES } from "@/enums/enums";
-import { useNavigate } from "react-router-dom";
+import { data, useNavigate } from "react-router-dom";
 import useUser from "../auth/useUser";
 import {
   Chart as ChartJS,
@@ -171,6 +171,7 @@ export default function AdminDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({});
+  console.log(editForm);
 
   const [showRdvModal, setShowRdvModal] = useState(false);
   // const [isLoading, setIsLoading] = useState(false);
@@ -181,6 +182,7 @@ export default function AdminDashboard() {
   const [startTime, setStartTime] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [patientSearchTermFilter, setPatientSearchTermFilter] = useState("");
+  const [typeRdv, setTypeRdv] = useState("");
 
   function handleDoctorChange(e) {
     setSelectedDoctor(e.target.value);
@@ -194,6 +196,9 @@ export default function AdminDashboard() {
       prev.includes(id) ? prev.filter((pid) => pid !== id) : [...prev, id]
     );
   }
+  const handleRdvTypeChange = (e) => {
+    setTypeRdv(e.target.value);
+  };
 
   function handleDateChange(e) {
     setSelectedDate(e.target.value);
@@ -202,9 +207,6 @@ export default function AdminDashboard() {
   function handleStartTimeChange(e) {
     setStartTime(e.target.value);
   }
-
-  console.log(selectedPatients);
-  console.log(selectedDoctor);
 
   async function handleCreateRdv() {
     setIsLoading(true);
@@ -216,6 +218,7 @@ export default function AdminDashboard() {
           medecinId: selectedDoctor,
           patientId,
           date: dt.toISOString(),
+          typeRdv: typeRdv,
         };
       });
       console.log("rdvPayload", rdvPayload);
@@ -416,9 +419,19 @@ export default function AdminDashboard() {
       role: user.role,
       profession: user.profession || "",
       matriculeId: user.matriculeId,
+      chantier: user.patient?.chantier || "",
     });
     setShowUserModal(true);
   };
+  const RDV_TYPES = [
+    { label: "Aprés reprise de travail", data: "APRES_REPRISE_DE_TRAVAIL" },
+    { label: "EMBAUCHE", data: "EMBAUCHE" },
+    { label: "AT", data: "AT" },
+    { label: "PP", data: "PP" },
+    { label: "ANNUELLE", data: "ANNUELLE" },
+    { label: "DEPART", data: "DEPART" },
+    { label: "SPONTANNEE", data: "SPONTANNEE" },
+  ];
 
   const handleSaveUser = async () => {
     setDisabled(true);
@@ -468,9 +481,10 @@ export default function AdminDashboard() {
       adresse: "",
       telephone: "",
       email: "",
-      role: "PATIENT",
+      role: "",
       profession: "",
       matriculeId: "",
+      chantier: "",
     });
   };
 
@@ -539,6 +553,7 @@ export default function AdminDashboard() {
   const handleInputChange = (e) => {
     const { name, value } = e.target;
     setEditForm((prev) => ({ ...prev, [name]: value }));
+    setDisabled(false);
     // Clear the error for this field as the user types
     if (formErrors[name]) {
       setFormErrors((prev) => ({ ...prev, [name]: undefined }));
@@ -600,6 +615,13 @@ export default function AdminDashboard() {
     if (!editForm.profession || editForm.profession.trim() === "") {
       erreurs.profession = "La profession est requise.";
       estValide = false;
+    }
+
+    if (editForm.role == "PATIENT") {
+      if (!editForm.chantier || editForm.chantier.trim() === "") {
+        erreurs.chantier = "Chantier est requis.";
+        estValide = false;
+      }
     }
 
     setFormErrors(erreurs);
@@ -1082,6 +1104,23 @@ export default function AdminDashboard() {
                         ))}
                       </select>
                     </div>
+                    <div className="mb-4">
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Type des rendez-vous
+                      </label>
+                      <select
+                        value={typeRdv}
+                        onChange={handleRdvTypeChange}
+                        className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 h-10"
+                      >
+                        <option value="">Sélectionner</option>
+                        {RDV_TYPES.map((rdv, index) => (
+                          <option key={index} value={rdv.data}>
+                            visite {rdv.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
                     {/* Patients multi-checkbox */}
                     {selectedDoctor && (
@@ -1185,7 +1224,8 @@ export default function AdminDashboard() {
                           selectedPatients.length === 0 ||
                           !selectedDate ||
                           !startTime ||
-                          isLoading
+                          isLoading ||
+                          typeRdv === ""
                         }
                         className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50"
                       >
@@ -1448,6 +1488,7 @@ export default function AdminDashboard() {
                             `${patient.prénom} ${patient.nom}`
                           );
                         }}
+                        su
                         className="w-full text-left p-2 hover:bg-gray-50 rounded-md transition-colors"
                       >
                         <div className="text-sm font-medium text-gray-900">
@@ -1875,7 +1916,7 @@ export default function AdminDashboard() {
                     name="role" // Added name attribute
                     value={editForm.role || ""}
                     onChange={handleInputChange} // Using unified handler
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                    className={`w-full mb-2 px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
                       formErrors.role
                         ? "border-red-500 focus:ring-red-500"
                         : "border-gray-300 focus:ring-blue-500"
@@ -1917,6 +1958,29 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </div>
+              {editForm.role == "PATIENT" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Chantier
+                  </label>
+                  <input
+                    type="text"
+                    name="chantier"
+                    value={editForm.chantier}
+                    onChange={handleInputChange}
+                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
+                      formErrors.chantier
+                        ? "border-red-500 focus:ring-red-500"
+                        : "border-gray-300 focus:ring-blue-500"
+                    }`}
+                  />
+                  {formErrors.chantier && (
+                    <p className="text-red-500 text-sm mt-1">
+                      {formErrors.chantier}
+                    </p>
+                  )}
+                </div>
+              )}
 
               <div className="flex justify-end space-x-4 mt-6">
                 <button
@@ -1924,11 +1988,12 @@ export default function AdminDashboard() {
                     setShowUserModal(false);
                     setShowCreateModal(false);
                     setSelectedUser(null);
+                    setDisabled(false);
                     setFormErrors({}); // Clear errors when closing modal
                   }}
                   className="px-4 py-2 border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 transition-colors"
                 >
-                  Cancel
+                  Annuler
                 </button>
                 <button
                   onClick={showCreateModal ? handleCreateUser : handleSaveUser}

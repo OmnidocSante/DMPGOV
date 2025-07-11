@@ -13,5 +13,6 @@ public record PatientRecord(
         String perimetreThoracique,
         PlanMedical planMedical,
         String atelier,
-        String entreprise
+        String entreprise,
+        String chantier
 ) {}

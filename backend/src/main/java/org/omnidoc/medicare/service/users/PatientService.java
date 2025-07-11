@@ -69,7 +69,8 @@ public class PatientService {
                 Util.decryptIfNotNull(patient.getPerimetreThoracique()),
                 patient.getPlanMedical(),
                 Util.decryptIfNotNull(patient.getAtelier()),
-                Util.decryptIfNotNull(patient.getEntreprise())
+                Util.decryptIfNotNull(patient.getEntreprise()),
+                Util.decryptIfNotNull(patient.getChantier())
         );
     }
 
@@ -116,6 +117,7 @@ public class PatientService {
         patient.setPlanMedical(patientRecord.planMedical());
         patient.setAtelier(Util.encryptIfNotNull(patientRecord.atelier()));
         patient.setEntreprise(Util.encryptIfNotNull(patientRecord.entreprise()));
+        patient.setChantier(Util.encryptIfNotNull(patientRecord.chantier()));
 
         return patientRepo.save(patient);
     }

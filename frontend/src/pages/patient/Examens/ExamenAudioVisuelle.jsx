@@ -123,8 +123,8 @@ export default function ExamenAudioVisuelleDetails() {
     { key: "visionDePresGauche", label: "Vision de près (Gauche)" },
     { key: "visionDeLoinDroit", label: "Vision de loin (Droit)" },
     { key: "visionDeLoinGauche", label: "Vision de loin (Gauche)" },
-    { key: "oeilDroit", label: "Oeil Droit" },
-    { key: "oeilGauche", label: "Oeil Gauche" },
+    { key: "oeilDroit", label: "Oreille Droit" },
+    { key: "oeilGauche", label: "Oreille Gauche" },
   ];
 
   return (

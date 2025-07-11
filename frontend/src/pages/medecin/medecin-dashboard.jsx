@@ -204,6 +204,7 @@ export default function DoctorDashboard() {
   const [rdvForm, setRdvForm] = useState({
     patientId: "",
     date: "",
+    typeRdv: "",
   });
 
   const [showStatusModal, setShowStatusModal] = useState(false);
@@ -309,7 +310,7 @@ export default function DoctorDashboard() {
       const success = await createRdv(rdvForm);
       if (success) {
         setShowRdvModal(false);
-        setRdvForm({ patientId: "", dateTime: "" });
+        setRdvForm({ patientId: "", date: "", typeRdv: "" });
       }
     } catch (err) {
       console.error("Error creating RDV:", err);
@@ -474,8 +475,37 @@ export default function DoctorDashboard() {
     );
   };
 
+  const [personSearchTerm, setPersonSearchTerm] = useState("");
+  const handleInputChange = (e) => {
+    setPersonSearchTerm(e.target.value);
+  };
+  console.log(users);
+  
+  const filteredPatients = users.filter(
+    (user) =>
+      user.role === "PATIENT" &&
+      (`${user.prénom} ${user.nom}`
+        .toLowerCase()
+        .includes(personSearchTerm.toLowerCase()) ||
+        (user.matriculeId || "")
+          .toLowerCase()
+          .includes(personSearchTerm.toLowerCase()))
+  );
+
+
+  const RDV_TYPES = [
+    { label: "Aprés reprise de travail", data: "APRES_REPRISE_DE_TRAVAIL" },
+    { label: "EMBAUCHE", data: "EMBAUCHE" },
+    { label: "AT", data: "AT" },
+    { label: "PP", data: "PP" },
+    { label: "ANNUELLE", data: "ANNUELLE" },
+    { label: "DEPART", data: "DEPART" },
+    { label: "SPONTANNEE", data: "SPONTANNEE" },
+  ];
+  console.log(rdvForm);
+
   const renderRdvManagement = () => {
-    const patients = users.filter((user) => user.role === "PATIENT");
+    // const patients = users.filter((user) => user.role === "PATIENT");
 
     return (
       <div className="space-y-6">
@@ -694,6 +724,14 @@ export default function DoctorDashboard() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Patient
                       </label>
+                      <input
+                        type="text"
+                        value={personSearchTerm}
+                        onChange={handleInputChange}
+                        placeholder="Rechercher un patient… ( nom, prénom,matricule ) "
+                        className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+
                       <select
                         value={rdvForm.patientId}
                         onChange={(e) =>
@@ -702,14 +740,37 @@ export default function DoctorDashboard() {
                         className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Sélectionner Patient</option>
-                        {patients.map((patient) => (
+                        {filteredPatients.map((patient) => (
                           <option key={patient.id} value={patient.id}>
-                            {patient.prénom} {patient.nom}
+                            {patient.prénom} {patient.nom} (
+                            {patient.matriculeId})
                           </option>
                         ))}
                       </select>
                     </div>
 
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Type de rendez-vous
+                      </label>
+                      <select
+                        value={rdvForm.type}
+                        onChange={(e) =>
+                          setRdvForm({
+                            ...rdvForm,
+                            typeRdv: e.target.value,
+                          })
+                        }
+                        className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Sélectionner</option>
+                        {RDV_TYPES.map((rdv, index) => (
+                          <option key={index} value={rdv.data}>
+                            visite {rdv.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Date & Heure
@@ -736,7 +797,12 @@ export default function DoctorDashboard() {
                     </button>
                     <button
                       onClick={handleCreateRdv}
-                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+                      disabled={
+                        rdvForm.date?.length < 2 ||
+                        !rdvForm.patientId ||
+                        rdvForm.type?.length < 1
+                      }
+                      className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors disabled:opacity-50"
                     >
                       <Save className="h-4 w-4 mr-2" />
                       Plannifier
@@ -892,9 +958,9 @@ export default function DoctorDashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 ">
       {/* Sidebar */}
-      <div className="fixed inset-y-0 left-0 w-64 bg-white shadow-lg ">
+      <div className="fixed inset-y-0 left-0  bg-white shadow-lg w-64  ">
         <div className="p-6">
           <h2 className="text-xl font-bold text-gray-900">Panel Médecin</h2>
         </div>

@@ -15,7 +15,6 @@ import org.omnidoc.medicare.utils.HmacUtil;
 import org.omnidoc.medicare.utils.Util;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.*;
 
@@ -37,13 +36,17 @@ public class UserService {
                 .map(u -> {
                     try {
                         u.setMatriculeId(Util.decryptIfNotNull(u.getMatriculeId()));
-                        u.setNom          (Util.decryptIfNotNull(u.getNom()));
-                        u.setPrénom       (Util.decryptIfNotNull(u.getPrénom()));
-                        u.setAdresse       (Util.decryptIfNotNull(u.getAdresse()));
-                        u.setCinId       (Util.decryptIfNotNull(u.getCinId()));
+                        u.setNom(Util.decryptIfNotNull(u.getNom()));
+                        u.setPrénom(Util.decryptIfNotNull(u.getPrénom()));
+                        u.setAdresse(Util.decryptIfNotNull(u.getAdresse()));
+                        u.setCinId(Util.decryptIfNotNull(u.getCinId()));
+                        if (u.getPatient() != null) {
+                            u.getPatient().setChantier(Util.decryptIfNotNull(u.getPatient().getChantier()));
+                        }
+
 
                     } catch (Exception e) {
-                        System.out.println("error is"+e.getMessage());
+                        System.out.println("error is" + e.getMessage());
                         u.setMatriculeId(null);
                         u.setNom(null);
                         u.setPrénom(null);
@@ -74,7 +77,6 @@ public class UserService {
             throw new ApiException("Cet email est déjà utilisé");
         }
 
-
         if (userRepo.existsByTelephone(user.getTelephone())) {
             throw new ApiException("Ce numéro de téléphone est déjà associé à un compte");
         }
@@ -90,7 +92,7 @@ public class UserService {
         user.setDateEntree(new Date());
 
         user.setNom(Util.encryptIfNotNull(user.getNom()));
-        user.setPrénom(Util.encryptIfNotNull(user.getNom()));
+        user.setPrénom(Util.encryptIfNotNull(user.getPrénom()));
         user.setMatriculeId(Util.encryptIfNotNull(user.getMatriculeId()));
         user.setAdresse(Util.encryptIfNotNull(user.getAdresse()));
         user.setCinId(Util.encryptIfNotNull(user.getCinId()));
@@ -106,7 +108,7 @@ public class UserService {
 //        emailService.sendEmail(user.getEmail(), subject, body);
 
         if (user.getRole() == Role.PATIENT) {
-            dossierMedicaleUtil.createDossier(createdUser);
+            dossierMedicaleUtil.createDossier(createdUser, user.getChantier());
         } else if (user.getRole() == Role.MEDECIN) {
             Medecin medecin = medecinRepo.save(new Medecin(createdUser));
         }
@@ -124,7 +126,7 @@ public class UserService {
 
     public User editUser(Long id, User updatedUser) throws Exception {
         System.out.println(updatedUser);
-        System.out.println(        updatedUser.getPrénom());
+        System.out.println(updatedUser.getPrénom());
         User existingUser = userRepository.findById(id).orElseThrow(() -> new ApiException("Utilisateur non trouvé avec l'ID: " + id));
 
         existingUser.setNom(Util.encryptIfNotNull(updatedUser.getNom()));
@@ -138,6 +140,7 @@ public class UserService {
         existingUser.setAdresse(Util.encryptIfNotNull(updatedUser.getAdresse()));
         existingUser.setPassword(existingUser.getPassword());
         existingUser.setCinId(Util.encryptIfNotNull(updatedUser.getCinId()));
+        existingUser.getPatient().setChantier(Util.encryptIfNotNull(updatedUser.getChantier()));
 
         if (!existingUser.getEmail().equals(updatedUser.getEmail())) {
             if (userRepo.existsByEmail(updatedUser.getEmail())) {

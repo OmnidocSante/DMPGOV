@@ -53,6 +53,8 @@ public class Patient {
     private String atelier;
     private String entreprise;
 
+    private String chantier;
+
     @JsonIgnore
     @OneToMany(mappedBy = "patient",cascade = CascadeType.ALL,orphanRemoval = true)
     private List<DossierMedicale> dossierMedicales;
