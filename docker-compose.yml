@@ -1,0 +1,19 @@
+services:
+  backend:
+    build:
+      context: ./backend
+    container_name: backend
+    ports:
+      - "3000:3000"
+    restart: always
+
+  frontend:
+    build:
+      context: .
+      dockerfile: nginx/Dockerfile
+    container_name: frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: always
