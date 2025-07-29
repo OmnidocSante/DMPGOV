@@ -110,6 +110,8 @@ const useDoctorRdv = () => {
   };
 
   const createRdv = async (rdvData) => {
+    console.log(rdvData);
+
     try {
       const response = await instance.post(
         "/api/rdv/create-by-doctor",
@@ -605,7 +607,7 @@ export default function DoctorDashboard() {
                 <thead className="bg-gray-50">
                   <tr>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Date et heure
+                      Date
                     </th>
                     <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Patient
@@ -643,9 +645,6 @@ export default function DoctorDashboard() {
                           <div className="text-sm text-gray-900">
                             {new Date(rdv.dateTime).toLocaleDateString()}
                           </div>
-                          <div className="text-sm text-gray-500">
-                            {new Date(rdv.dateTime).toLocaleTimeString()}
-                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
@@ -675,7 +674,9 @@ export default function DoctorDashboard() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="text-sm font-medium text-gray-900">
                             {RDV_TYPES.find((type) => type.data === rdv.typeRdv)
-                              ?.label || rdv.typeRdv}
+                              ?.label ||
+                              rdv.typeRdv ||
+                              "plannifié"}
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
@@ -786,7 +787,7 @@ export default function DoctorDashboard() {
                         Date & Heure
                       </label>
                       <input
-                        type="datetime-local"
+                        type="date"
                         value={rdvForm.date}
                         onChange={(e) =>
                           setRdvForm({ ...rdvForm, date: e.target.value })

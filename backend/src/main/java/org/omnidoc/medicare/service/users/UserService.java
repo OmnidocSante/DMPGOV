@@ -66,6 +66,7 @@ public class UserService {
         String username = jwtService.extractUsername(token);
         User user = userRepo.findByEmail(username).orElseThrow(() -> new ApiException("Doctor not found"));
         HashMap<String, String> result = new HashMap<>();
+        result.put("email",user.getEmail());
         result.put("firstName", Util.decryptIfNotNull(user.getNom()));
         result.put("lastName", Util.decryptIfNotNull(user.getPrénom()));
         return result;

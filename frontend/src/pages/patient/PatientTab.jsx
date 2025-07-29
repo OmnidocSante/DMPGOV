@@ -8,7 +8,7 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { format, parseISO } from "date-fns";
+import { format, isValid, parse, parseISO } from "date-fns";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   LayoutDashboard,
@@ -217,8 +217,6 @@ export default function PatientTab() {
   };
 
   const onSubmit = async (data) => {
-    console.log(data);
-
     await instance.patch(`/api/patient/${id}`, {
       ...data,
       planMedical: patient.planMedical,
@@ -280,37 +278,60 @@ export default function PatientTab() {
       console.error("Error uploading image:", error);
     }
   };
+  const formatDate = (dateStr) => {
+    const date = new Date(dateStr);
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const day = String(date.getDate()).padStart(2, "0");
+    return `${year}-${month}-${day}`;
+  };
 
   const handleLogout = () => {
     localStorage.removeItem("token");
     navigate("/");
   };
-  console.log(patient);
-  
+  const [nextRdv, setNextRdv] = useState("");
+  const [isCertificateLoading, setIsCertificateLoading] = useState(false);
 
   const sendCertificate = async () => {
-    const response = await instance.get("/api/users/user");
-
-    const { firstName, lastName } = response.data;
-    const signature = localStorage.getItem("token")?.split(".")[2];
-    const blob = await pdf(
-      <CertificatePDF
-        patientFirstName={patient.user.nom}
-        patientLastName={patient.user.prénom}
-        gender={patient.user.sexe}
-        status={patient.status}
-        firstName={firstName}
-        lastName={lastName}
-        patientCin={patient.user.cinId}
-        signature={signature}
-      />
-    ).toBlob();
-    const formData = new FormData();
-    formData.append("signature", signature);
-    formData.append("certificateFile", blob);
+    setIsCertificateLoading(true);
 
     try {
-      const response = await instance.post(
+      const response = await instance.get("/api/users/user");
+
+      const { email, firstName, lastName } = response.data;
+      const signature = localStorage.getItem("token")?.split(".")[2];
+
+      const formattedDateNaissance = formatDate(patient.user.dateNaissance);
+      const formattedDateEntree = formatDate(patient.user.dateEntree);
+
+      const responseNextRdv = await instance.post(`/api/rdv/schedule`, null, {
+        params: { patientId: patient.user.id, email, period: nextRdv },
+      });
+      const formattedNextRdv = formatDate(responseNextRdv.data.date);
+
+      const blob = await pdf(
+        <CertificatePDF
+          patientFirstName={patient.user.nom}
+          patientLastName={patient.user.prénom}
+          gender={patient.user.sexe}
+          status={patient.status}
+          firstName={firstName}
+          lastName={lastName}
+          patientCin={patient.user.cinId}
+          signature={signature}
+          matriculeId={patient.user.matriculeId}
+          dateNaissance={formattedDateNaissance}
+          dateEntree={formattedDateEntree}
+          profession={patient.user.profession}
+          nextRdv={formattedNextRdv}
+        />
+      ).toBlob();
+      const formData = new FormData();
+      formData.append("signature", signature);
+      formData.append("certificateFile", blob);
+
+      const certificateResponse = await instance.post(
         `/api/historique-status/signature-certificate/${id}`,
         formData,
         {
@@ -318,13 +339,16 @@ export default function PatientTab() {
         }
       );
 
-      const contentDisposition = response.headers["content-disposition"];
+      const contentDisposition =
+        certificateResponse.headers["content-disposition"];
       const filenameMatch =
         contentDisposition && contentDisposition.match(/filename="(.+)"/);
       const filename = filenameMatch ? filenameMatch[1] : "certificate.pdf";
 
-      const blob = new Blob([response.data], { type: "application/pdf" });
-      const url = window.URL.createObjectURL(blob);
+      const responseBlob = new Blob([certificateResponse.data], {
+        type: "application/pdf",
+      });
+      const url = window.URL.createObjectURL(responseBlob);
 
       const link = document.createElement("a");
       link.href = url;
@@ -344,6 +368,8 @@ export default function PatientTab() {
       } else {
         alert("An unexpected error occurred.");
       }
+    } finally {
+      setIsCertificateLoading(false);
     }
   };
   const [isCertificateDialogOpen, setIsCertificateDialogOpen] = useState(false);
@@ -385,6 +411,29 @@ export default function PatientTab() {
         transition={{ duration: 0.5 }}
         className="p-6 min-h-screen bg-bay-of-many-50"
       >
+        <Dialog open={isCertificateLoading} onOpenChange={() => {}}>
+          <DialogContent className="bg-white sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle className="text-center">
+                Génération en cours
+              </DialogTitle>
+            </DialogHeader>
+            <div className="flex flex-col items-center space-y-4 py-6">
+              <motion.div
+                className="w-16 h-16 border-4 border-bay-of-many-400 border-t-transparent rounded-full"
+                animate={{ rotate: 360 }}
+                transition={{ repeat: Infinity, duration: 1, ease: "linear" }}
+              />
+              <p className="text-bay-of-many-700 font-medium text-center">
+                Génération de certificat en cours...
+              </p>
+              <p className="text-sm text-bay-of-many-500 text-center">
+                Veuillez patienter pendant que nous préparons votre certificat.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+
         {user.role == "MEDECIN" ? (
           <div className="w-full flex justify-end mb-8">
             <motion.button
@@ -569,7 +618,6 @@ export default function PatientTab() {
                       </DialogFooter>
                     </DialogContent>
                   </Dialog>
-
                   <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
                     <DialogTrigger onClick={() => setIsDialogOpen(true)}>
                       <button className="px-4 py-2 bg-transparent border border-bay-of-many-600 text-bay-of-many-600 rounded-lg text-sm font-medium hover:bg-bay-of-many-300 duration-300 transition-all flex items-center justify-around gap-x-4 md:w-56 w-full h-12 ">
@@ -779,7 +827,7 @@ export default function PatientTab() {
                     open={isCertificateDialogOpen}
                     onOpenChange={setIsCertificateDialogOpen}
                   >
-                    <DialogTrigger onClick={handleGenerateCertificate}>
+                    <DialogTrigger>
                       <button
                         className="px-4 py-2 bg-transparent border border-bay-of-many-600 text-bay-of-many-600 rounded-lg text-sm font-medium hover:bg-bay-of-many-300 duration-300 transition-all flex items-center justify-around gap-x-4 md:w-56 w-full h-12 cursor-pointer disabled:pointer-events-none disabled:opacity-50 "
                         disabled={
@@ -795,21 +843,42 @@ export default function PatientTab() {
                       <DialogHeader>
                         <DialogTitle>Confirmer statut</DialogTitle>
                       </DialogHeader>
-                      <div className="py-4">
-                        <p>Statut du patient: {patient.status}</p>
+                      <div className="pt-4 pb-0">
+                        <p>
+                          Statut du patient:
+                          {patient.status}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-4 mt-2">
+                        <label htmlFor="nextRdv">Prochain Rendez-vous</label>
+                        <select
+                          onChange={(e) => setNextRdv(e.target.value)}
+                          id="status"
+                          className="border border-bay-of-many-400 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-bay-of-many-600"
+                          defaultValue={""}
+                        >
+                          <option value="" disabled>
+                            Choisissez la date du prochain RDV...
+                          </option>
+                          <option value={"3M"}>dans 3 mois</option>
+                          <option value={"6M"}>dans 6 mois</option>
+                          <option value={"1Y"}>dans 1 an</option>
+                        </select>
                       </div>
                       <DialogFooter className="flex justify-end space-x-3 pt-4 border-t border-gray-200">
                         <button
-                          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bay-of-many-500"
+                          className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-white/60 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bay-of-many-500 "
                           onClick={() => setIsCertificateDialogOpen(false)}
                         >
                           Annuler
                         </button>
                         <button
-                          className="px-4 py-2 text-sm font-medium text-white bg-bay-of-many-600 rounded-md hover:bg-bay-of-many-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bay-of-many-500"
+                          className="px-4 py-2 text-sm font-medium text-white bg-bay-of-many-600 rounded-md hover:bg-bay-of-many-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-bay-of-many-500 disabled:pointer-events-none disabled:opacity-50"
                           onClick={() => {
+                            handleGenerateCertificate();
                             setIsCertificateDialogOpen(false);
                           }}
+                          disabled={nextRdv.length < 1}
                         >
                           Confirmer
                         </button>
@@ -973,7 +1042,7 @@ export default function PatientTab() {
                 Mode de Vie
               </h3>
               <p className="text-sm text-indigo-600">
-                Informations sur les habitudes de vie du patient 
+                Informations sur les habitudes de vie du patient
               </p>
             </motion.div>
             <motion.div

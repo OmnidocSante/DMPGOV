@@ -6,51 +6,88 @@ import {
   View,
   Text,
   Font,
+  Image,
 } from "@react-pdf/renderer";
 import roboto from "../../components/fonts/Roboto.ttf";
+import robotoBold from "../../components/fonts/Roboto-Bold.ttf";
+import logo from "../../assets/images/logo.png";
 
 Font.register({
   family: "Roboto",
   src: roboto,
 });
 
+Font.register({
+  family: "Roboto-Bold",
+  src: robotoBold,
+});
+
 const styles = StyleSheet.create({
   page: {
     padding: 40,
-    fontSize: 14,
-    lineHeight: 1.5,
     fontFamily: "Roboto",
-    width: "800px",
+    fontSize: 12,
+    lineHeight: 1.4,
+  },
+  header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    marginBottom: 16,
+  },
+  logo: {
+    width: 100,
+    height: 50,
+    objectFit: "contain",
+  },
+  companyInfo: {
+    flex: 1,
+    marginLeft: 12,
+    fontSize: 10,
+    textAlign: "right",
+  },
+  date: {
+    textAlign: "right",
+    marginBottom: 8,
+    fontSize: 10,
   },
   title: {
     textAlign: "center",
-    color: "#1d4ed8",
-    fontSize: 20,
-    fontWeight: "semibold",
-    marginBottom: 64,
+    marginVertical: 8,
+    fontSize: 16,
+    fontWeight: "bold",
   },
-  bodyText: {
-    marginBottom: 16,
+  table: {
+    display: "table",
+    width: "auto",
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderColor: "#000",
+    marginVertical: 8,
+  },
+  tableRow: {
+    flexDirection: "row",
+  },
+  tableCell: {
+    borderStyle: "solid",
+    borderWidth: 1,
+    borderColor: "#000",
+    padding: 4,
+    flex: 1,
+    fontSize: 10,
+  },
+  attestation: {
+    marginVertical: 8,
+    fontSize: 12,
+    textAlign: "justify",
   },
   footer: {
-    marginTop: 80,
+    marginTop: 16,
+    fontSize: 10,
   },
   signature: {
+    marginTop: 32,
     textAlign: "right",
-    paddingRight: 40,
-    marginTop: 80,
-  },
-  signatureLabel: {
-    marginBottom: 8,
-  },
-  signatureValue: {
-    position: "absolute",
-    right: 100,
-    top: 30,
-    maxWidth: 200,
-    fontSize: 12,
-    textAlign: "right",
-    wordWrap: "break-word",
+    fontSize: 10,
   },
 });
 
@@ -60,47 +97,91 @@ const CertificatePDF = ({
   patientFirstName,
   patientLastName,
   patientCin,
-  signature,
-  gender,
   status,
+  matriculeId,
+  dateNaissance,
+  dateEntree,
+  profession,
+  signature,
+  nextRdv,
 }) => {
   const now = new Date();
-  const formattedTime = now.toLocaleTimeString("fr-FR", {
-    hour: "2-digit",
-    minute: "2-digit",
-    hour12: false,
-  });
-
-  const formattedDate = now.toLocaleDateString("fr-FR");
+  const formattedDate = now.toDateString("fr-FR");
 
   return (
     <Document>
       <Page size="A4" style={styles.page}>
-        <Text style={styles.title}>Certificat d’aptitude physique</Text>
+        <View style={styles.header}>
+          <Image style={styles.logo} src={logo} />
+          <View style={styles.companyInfo}>
+            <Text>Siège Social, Bureau & Entrepôts</Text>
+            <Text>Angle rue Mohamed El Mesfioui & Corbi</Text>
+            <Text>Oukacha - CP 20580 - Casablanca 05 - Maroc</Text>
+            <Text>Email: somagec@somagec.ma</Text>
+            <Text>Tél: (+212) 522-35-49-45 / 46 / 47</Text>
+            <Text>Mobile: (+212) 661-91-22-11 /12 /13 /14 /15</Text>
+            <Text>Fax: (+212) 522-35-44-24, 35-59-95</Text>
+          </View>
+        </View>
 
-        <Text style={styles.bodyText}>
-          Je soussigné Dr {firstName} {lastName}, atteste par la présente avoir
-          examiné {gender === "M" ? "Mr" : "Mme"} {patientFirstName}{" "}
-          {patientLastName}, numéro CIN {patientCin}, certifie qu’il est
-           {status == "APTE" ? " apte" : " non apte"} à exercer sa fonction de
-          patient dans les courses hippiques conformément aux prérequis de la
-          santé physique.
+        <Text style={styles.date}>Date: {formattedDate}</Text>
+
+        <Text style={styles.title}>Fiche médicale d'aptitude physique</Text>
+
+        <View style={styles.table}>
+          <View style={styles.tableRow}>
+            <Text style={styles.tableCell}>
+              Nom/Prénom: {patientLastName} {patientFirstName}
+            </Text>
+            <Text style={styles.tableCell}>N° Matricule: {matriculeId}</Text>
+          </View>
+          <View style={styles.tableRow}>
+            <Text style={styles.tableCell}>
+              Date de naissance: {dateNaissance}
+            </Text>
+            <Text style={styles.tableCell}>CIN N°: {patientCin}</Text>
+          </View>
+          <View style={styles.tableRow}>
+            <Text style={styles.tableCell}>Date d'embauche: {dateEntree}</Text>
+            <Text style={styles.tableCell}>Fonction/Poste: {profession}</Text>
+          </View>
+        </View>
+        <Text style={styles.title}>Attestation Medicale</Text>
+
+        <Text style={styles.attestation}>
+          Je soussigné, Dr {firstName} {lastName}, médecin de travail, certifie
+          avoir examiné ce jour {patientLastName} {patientFirstName} et déclare
+          après examen médical qu'il(elle) est:
+          <Text
+            style={{
+              fontWeight: "bold",
+              fontFamily: "Roboto-Bold",
+            }}
+          >
+            {" "}
+            {status === "APTE" ? "Apte" : "Non Apte"}
+          </Text>
+          .
         </Text>
 
         <View style={styles.footer}>
-          <Text style={styles.bodyText}>
-            Fait le {formattedDate}, à {formattedTime},
-          </Text>
-          <View style={styles.signature}>
-            <Text style={styles.signatureLabel}>
-              Signature et cachet du médecin
+          <Text>Date prochaine visite le: {nextRdv}</Text>
+        </View>
+        <View
+          style={{
+            ...styles.signature,
+            maxWidth: 200,
+            fontSize: 8,
+            alignSelf: "flex-end",
+          }}
+        >
+          <Text style={{ textAlign: "right" }}>Signature</Text>
+          <Text style={{ textAlign: "right" }}>et cachet du médecin</Text>
+          {signature && (
+            <Text style={{ textAlign: "right", wordWrap: "break-word" }}>
+              : {signature}
             </Text>
-            {signature && (
-              <Text style={styles.signatureValue}>
-                {signature.substring(0, 10)}
-              </Text>
-            )}
-          </View>
+          )}
         </View>
       </Page>
     </Document>

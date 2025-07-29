@@ -4,6 +4,7 @@ import jakarta.validation.Valid;
 
 import org.omnidoc.medicare.entity.rdvs.Rdv;
 import org.omnidoc.medicare.enums.StatusRDV;
+import org.omnidoc.medicare.exceptions.ApiException;
 import org.omnidoc.medicare.records.RdvRecord;
 import org.omnidoc.medicare.request.RdvRequest;
 import org.omnidoc.medicare.service.rdv.RdvService;
@@ -83,4 +84,21 @@ public class RdvController {
             return ResponseEntity.notFound().build();
         }
     }
+
+    @PostMapping("/schedule")
+    public ResponseEntity<Rdv> scheduleNextRdv(
+            @RequestParam Long patientId,
+            @RequestParam String email,
+            @RequestParam String period) {
+
+        try {
+            Rdv rdv = rdvService.scheduleOrUpdateNextRdv(patientId, email, period);
+            return ResponseEntity.ok(rdv);
+        } catch (ApiException e) {
+            return ResponseEntity.badRequest().body(null);
+        } catch (Exception e) {
+            return ResponseEntity.status(500).body(null);
+        }
+    }
+
 }

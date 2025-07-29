@@ -56,7 +56,7 @@ public class PatientService {
                 user.getRole(),
                 user.getDateEntree(),
                 user.getProfession(),
-                user.getCinId()
+                Util.decryptIfNotNull(user.getCinId())
         );
 
         return new PatientRecord(

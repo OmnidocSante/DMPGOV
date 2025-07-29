@@ -14,6 +14,7 @@ import org.omnidoc.medicare.enums.StatusRDV;
 import org.omnidoc.medicare.enums.TypeRdv;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -28,7 +29,7 @@ public class Rdv {
 
     @NotNull(message = "La date du rendez-vous est obligatoire")
     @Column(nullable = false)
-    private LocalDateTime date;
+    private Date date;
 
     @JsonIgnore
     @NotNull(message = "Le médecin est obligatoire")
@@ -47,6 +48,8 @@ public class Rdv {
 
     @Enumerated(value = EnumType.STRING)
     private StatusRDV statusRDV = StatusRDV.PLANIFIE;
+
+    private Boolean isNextRdv = false;
 
 
 }

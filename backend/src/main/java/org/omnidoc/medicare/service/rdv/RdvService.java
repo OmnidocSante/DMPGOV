@@ -22,7 +22,10 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
@@ -54,9 +57,7 @@ public class RdvService {
         Patient patient = patientRepo.findByUser_Id(rdvRequest.getPatientId()).orElseThrow(() -> new ApiException("Patient not found"));
         Medecin medecin = medecinRepo.findByUser_Id((rdvRequest.getMedecinId())).orElseThrow(() -> new ApiException("Medecin not found"));
 
-
         try {
-
             Optional<DossierMedicale> optionalDossier = dossierMedicaleRepo.findTopByPatient_IdOrderByDateDesc(patient.getId());
 
             if (optionalDossier.isPresent()) {
@@ -68,7 +69,6 @@ public class RdvService {
                 dossierMedicaleUtil.copyDossier(patient);
             }
 
-
             boolean hasAccess = accessRepo.existsByMedecinAndPatient(medecin, patient);
             if (!hasAccess) {
                 Access access = new Access();
@@ -76,27 +76,25 @@ public class RdvService {
                 access.setPatient(patient);
                 accessRepo.save(access);
             }
+
             Rdv rdv = new Rdv();
             rdv.setDate(rdvRequest.getDate());
             rdv.setPatient(patient);
             rdv.setMedecin(medecin);
             rdv.setTypeRdv(rdvRequest.getTypeRdv());
+            rdv.setIsNextRdv(false);
             rdvRepo.save(rdv);
-//            emailService.sendEmail(medecin.getUser().getEmail(), "Nouveau rendez-vous médical programmé", "Bonjour Dr " + medecin.getUser().getNom() + ",\n\n" + "Un nouveau rendez-vous a été fixé avec le jockey " + patient.getUser().getNom() + " " + patient.getUser().getPrénom() + " le " + rdv.getDate().toString() + ".\n\n" + "Merci de bien vouloir le noter dans votre agenda.\n\n" + "Cordialement,\nL'équipe Omnidoc");
-
 
         } catch (Exception e) {
             throw new ApiException(e.getMessage());
-
         }
-
     }
 
     @Transactional
     public void createRdvs(@Valid List<RdvRequest> rdvRequests) {
         for (RdvRequest rdvRequest : rdvRequests) {
             try {
-                if (rdvRequest.getDate() == null || rdvRequest.getDate().isBefore(LocalDateTime.now())) {
+                if (rdvRequest.getDate() == null || rdvRequest.getDate().before(new Date())) {
                     throw new ApiException("Appointment date is invalid or in the past for request: " + rdvRequest.toString());
                 }
 
@@ -126,6 +124,7 @@ public class RdvService {
                 rdv.setPatient(patient);
                 rdv.setMedecin(medecin);
                 rdv.setTypeRdv(rdvRequest.getTypeRdv());
+                rdv.setIsNextRdv(false);
                 rdvRepo.save(rdv);
 
 //                emailService.sendEmail(medecin.getUser().getEmail(), "Nouveau rendez-vous médical programmé", "Bonjour Dr " + medecin.getUser().getNom() + ",\n\n" + "Un nouveau rendez-vous a été fixé avec le jockey " + patient.getUser().getNom() + " " + patient.getUser().getPrénom() + " le " + rdv.getDate().toString() + ".\n\n" + "Merci de bien vouloir le noter dans votre agenda.\n\n" + "Cordialement,\nL'équipe Omnidoc");
@@ -180,6 +179,7 @@ public class RdvService {
         Patient patient = patientRepo.findByUser_Id(rdvRequest.getPatientId()).orElseThrow(() -> new ApiException("jockey not found"));
         Medecin medecin = medecinRepo.findByUser_Email(username).orElseThrow(() -> new ApiException("Doctor not found"));
 
+
         try {
 
             Optional<DossierMedicale> optionalDossier = dossierMedicaleRepo.findTopByPatient_IdOrderByDateDesc(patient.getId());
@@ -205,6 +205,7 @@ public class RdvService {
             rdv.setDate(rdvRequest.getDate());
             rdv.setPatient(patient);
             rdv.setMedecin(medecin);
+            rdv.setIsNextRdv(false);
             rdv.setTypeRdv(rdvRequest.getTypeRdv());
             rdvRepo.save(rdv);
         } catch (Exception e) {
@@ -228,7 +229,7 @@ public class RdvService {
         for (int i = 0; i < rdvRequests.size(); i++) {
             RdvRequest rdvRequest = rdvRequests.get(i);
             try {
-                if (rdvRequest.getDate() == null || rdvRequest.getDate().isBefore(LocalDateTime.now())) {
+                if (rdvRequest.getDate() == null || rdvRequest.getDate().before(new Date())) {
                     logger.warn("Skipping RdvRequest at index {} due to invalid or past date: {}", i, rdvRequest.getDate());
                     throw new ApiException("Appointment date is invalid or in the past for request at index " + i + ": " + rdvRequest.toString());
                 }
@@ -261,6 +262,7 @@ public class RdvService {
                 rdv.setPatient(patient);
                 rdv.setMedecin(medecin);
                 rdv.setTypeRdv(rdvRequest.getTypeRdv());
+                rdv.setIsNextRdv(false);
                 rdvRepo.save(rdv);
                 logger.info("Successfully created Rdv for patient {} with doctor {} on {}", patient.getUser().getNom(), medecin.getUser().getNom(), rdv.getDate());
 
@@ -303,5 +305,48 @@ public class RdvService {
         }
     }
 
+    public Rdv scheduleOrUpdateNextRdv(Long patientId, String email, String period) {
+        Patient patient = patientRepo.findByUser_Id(patientId)
+                .orElseThrow(() -> new ApiException("Patient not found"));
+        Medecin medecin = medecinRepo.findByUser_Email(email)
+                .orElseThrow(() -> new ApiException("Medecin not found"));
 
+        Optional<Rdv> lastActualRdvOpt = rdvRepo
+                .findTopByPatientAndMedecinAndIsNextRdvFalseOrderByDateDesc(patient, medecin);
+
+        Date baseDate = lastActualRdvOpt
+                .map(Rdv::getDate)
+                .orElse(new Date());
+
+        Calendar cal = Calendar.getInstance();
+        cal.setTime(baseDate);
+
+        switch (period) {
+            case "3M" -> cal.add(Calendar.MONTH, 3);
+            case "6M" -> cal.add(Calendar.MONTH, 6);
+            case "1Y" -> cal.add(Calendar.YEAR, 1);
+            default -> throw new ApiException("Invalid period: " + period);
+        }
+
+        Date newDate = cal.getTime();
+
+        Optional<Rdv> nextRdvOpt = rdvRepo.findByPatientAndMedecinAndIsNextRdvTrue(patient, medecin);
+
+        Rdv nextRdv;
+        if (nextRdvOpt.isPresent()) {
+            nextRdv = nextRdvOpt.get();
+            nextRdv.setDate(newDate);
+        } else {
+            nextRdv = new Rdv();
+            nextRdv.setPatient(patient);
+            nextRdv.setMedecin(medecin);
+            nextRdv.setDate(newDate);
+            nextRdv.setStatusRDV(StatusRDV.PLANIFIE);
+            nextRdv.setIsNextRdv(true);
+        }
+
+        rdvRepo.save(nextRdv);
+
+        return nextRdv;
+    }
 }

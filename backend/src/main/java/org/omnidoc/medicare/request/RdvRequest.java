@@ -13,6 +13,7 @@ import lombok.Setter;
 import org.omnidoc.medicare.enums.TypeRdv;
 
 import java.time.LocalDateTime;
+import java.util.Date;
 
 @Getter
 @Setter
@@ -27,7 +28,7 @@ public class RdvRequest {
 
     @NotNull(message = "La date du rendez-vous est obligatoire")
     @FutureOrPresent(message = "La date du rendez-vous doit être dans le présent ou le futur")
-    private LocalDateTime date;
+    private Date date;
 
     private TypeRdv typeRdv;
 }

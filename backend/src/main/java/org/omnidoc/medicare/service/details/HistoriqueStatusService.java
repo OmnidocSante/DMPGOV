@@ -90,30 +90,35 @@ public class HistoriqueStatusService {
                                          String patientLastName, LocalDateTime date, String status) {
     }
 
-    public ResponseEntity<byte[]> addSignatureAndCertificate(String signature, MultipartFile certificateFile,Long patientId) throws Exception {
-        HistoriqueStatus historiqueStatus = historiqueStatusRepo.findLatestRdvByPatientEmail(patientId).orElseThrow(() -> new ApiException("Historique status not found"));
-        if (historiqueStatus.getSignature() != null) {
-            if (historiqueStatus.getCertificate() != null) {
-                System.out.println("here");
-                byte[] existingPdf = historiqueStatus.getCertificate().getBytes(1, (int) historiqueStatus.getCertificate().length());
-                return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"certificate.pdf\"").body(existingPdf);
-            } else {
-                throw new ApiException("Signature exists but no certificate found");
-            }
-        }
-        historiqueStatus.setSignature(signature);
+    public ResponseEntity<byte[]> addSignatureAndCertificate(String signature, MultipartFile certificateFile, Long patientId) throws Exception {
+        // Always create a new HistoriqueStatus instance
+        HistoriqueStatus newHistoriqueStatus = new HistoriqueStatus();
+
+        // Assuming HistoriqueStatus has a Patient object or patientId field — adjust as needed
+        Patient patient = patientRepo.findById(patientId)
+                .orElseThrow(() -> new ApiException("Patient not found"));
+        newHistoriqueStatus.setPatient(patient);
+
+        // Set signature
+        newHistoriqueStatus.setSignature(signature);
+
+        // Set certificate
         try {
             byte[] bytes = certificateFile.getBytes();
             Blob blob = new SerialBlob(bytes);
-            historiqueStatus.setCertificate(blob);
+            newHistoriqueStatus.setCertificate(blob);
         } catch (SQLException e) {
             throw new RuntimeException("Failed to store PDF certificate", e);
         }
 
-        historiqueStatusRepo.save(historiqueStatus);
+        historiqueStatusRepo.save(newHistoriqueStatus);
 
+        // Return the PDF
         byte[] newPdf = certificateFile.getBytes();
-        return ResponseEntity.ok().contentType(MediaType.APPLICATION_PDF).header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"certificate.pdf\"").body(newPdf);
+        return ResponseEntity.ok()
+                .contentType(MediaType.APPLICATION_PDF)
+                .header(HttpHeaders.CONTENT_DISPOSITION, "attachment; filename=\"certificate.pdf\"")
+                .body(newPdf);
     }
 
 }
