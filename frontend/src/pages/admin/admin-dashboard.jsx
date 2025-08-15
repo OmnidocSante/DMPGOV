@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
@@ -45,6 +45,7 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+import { FixedSizeList as List } from "react-window";
 
 const useUsers = () => {
   const [users, setUsers] = useState([]);
@@ -65,6 +66,8 @@ const useUsers = () => {
   };
 
   const updateUser = async (userId, userData) => {
+    console.log(userData);
+
     try {
       const response = await instance.put(`/api/users/${userId}`, userData);
       await fetchUsers();
@@ -171,7 +174,6 @@ export default function AdminDashboard() {
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [editForm, setEditForm] = useState({});
-  console.log(editForm);
 
   const [showRdvModal, setShowRdvModal] = useState(false);
   // const [isLoading, setIsLoading] = useState(false);
@@ -183,6 +185,21 @@ export default function AdminDashboard() {
   const [isLoading, setIsLoading] = useState(false);
   const [patientSearchTermFilter, setPatientSearchTermFilter] = useState("");
   const [typeRdv, setTypeRdv] = useState("");
+
+  const [kpi, setKpi] = useState();
+  const fetchKpis = async () => {
+    try {
+      const response = await instance.get("/api/users/kpi");
+
+      setKpi(response.data);
+    } catch (err) {
+      setError(err.message);
+    }
+  };
+
+  useEffect(() => {
+    fetchKpis();
+  }, []);
 
   function handleDoctorChange(e) {
     setSelectedDoctor(e.target.value);
@@ -277,30 +294,28 @@ export default function AdminDashboard() {
 
   const { rdvs, loading: rdvsLoading, error: rdvsError, fetchRdvs } = useRdv();
 
-  const prepareChartData = () => {
-    const patients = users.filter((user) => user.role === "PATIENT");
+  const prepareChartData = (kpi, selectedCity = "ALL") => {
+    // All cities
+    const cities = Object.keys(kpi.aptesPerVilles);
 
-    const doctors = users.filter((user) => user.role === "MEDECIN");
+    // Filter city data
+    let cityData = {};
+    if (selectedCity === "ALL") {
+      cityData = { ...kpi.aptesPerVilles };
+    } else if (kpi.aptesPerVilles[selectedCity]) {
+      cityData[selectedCity] = kpi.aptesPerVilles[selectedCity];
+    }
 
-    // Prepare cities for filter
-    const cities = Array.from(
-      new Set(patients.map((j) => j.ville).filter(Boolean))
-    );
+    // Sum APTE / NON_APTE
+    let aptes = 0;
+    let nonAptes = 0;
 
-    // Filter jockeys by selected city
-    const filteredJockeys =
-      selectedCity === "ALL"
-        ? patients
-        : patients.filter((j) => j.ville === selectedCity);
+    Object.values(cityData).forEach((city) => {
+      aptes += city?.APTE || 0;
+      nonAptes += city?.NON_APTE || 0;
+    });
 
-    // Calculate jockey aptitude data
-    const aptes = filteredJockeys.filter(
-      (j) => j.patient.status === "APTE"
-    ).length;
-    const nonAptes = filteredJockeys.filter(
-      (j) => j.patient.status !== "APTE"
-    ).length;
-
+    // Patient aptitude chart
     const patientAptitudeData = {
       labels: ["Patients Aptes", "Patients Non Aptes"],
       datasets: [
@@ -313,7 +328,7 @@ export default function AdminDashboard() {
       ],
     };
 
-    // Calculate monthly examinations data
+    // Monthly examinations placeholder
     const monthlyLabels = [
       "Jan",
       "Feb",
@@ -328,14 +343,7 @@ export default function AdminDashboard() {
       "Nov",
       "Dec",
     ];
-
     const monthlyCounts = Array(12).fill(0);
-    rdvs.forEach((rdv) => {
-      if (["PLANIFIE", "TERMINE"].includes(rdv.statusRDV)) {
-        const date = new Date(rdv.dateTime);
-        monthlyCounts[date.getMonth()]++;
-      }
-    });
 
     const monthlyExaminationsData = {
       labels: monthlyLabels,
@@ -355,10 +363,7 @@ export default function AdminDashboard() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          position: "top",
-          labels: { font: { family: "Inter" } },
-        },
+        legend: { position: "top", labels: { font: { family: "Inter" } } },
         title: {
           display: true,
           font: { size: 16, family: "Inter" },
@@ -459,7 +464,7 @@ export default function AdminDashboard() {
     setDisabled(true);
 
     if (!validateForm()) {
-      return; // Stop if validation fails
+      return; 
     }
     const success = await createUser(editForm);
     if (success) {
@@ -617,24 +622,131 @@ export default function AdminDashboard() {
       estValide = false;
     }
 
-    if (editForm.role == "PATIENT") {
-      if (!editForm.chantier || editForm.chantier.trim() === "") {
-        erreurs.chantier = "Chantier est requis.";
-        estValide = false;
-      }
-    }
-
     setFormErrors(erreurs);
     return estValide;
   };
 
+  const [currentPage, setCurrentPage] = useState(1);
+  const usersPerPage = 10;
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const filteredUsers = users.filter((user) => {
+    const fullName = `${user.prénom} ${user.nom}`.toLowerCase();
+    return (
+      fullName.includes(searchQuery.toLowerCase()) ||
+      user.matriculeId?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      user.role?.toLowerCase().includes(searchQuery.toLowerCase())
+    );
+  });
+
+  const totalPages = Math.ceil(filteredUsers.length / usersPerPage);
+  const startIndex = (currentPage - 1) * usersPerPage;
+  const currentUsers = filteredUsers.slice(
+    startIndex,
+    startIndex + usersPerPage
+  );
+
+  const renderPagination = () => {
+    const pageNumbers = [];
+    const maxPagesToShow = 5;
+
+    let start = Math.max(1, currentPage - 2);
+    let end = Math.min(totalPages, start + maxPagesToShow - 1);
+
+    if (end - start < maxPagesToShow - 1) {
+      start = Math.max(1, end - maxPagesToShow + 1);
+    }
+
+    for (let i = start; i <= end; i++) {
+      pageNumbers.push(i);
+    }
+
+    return (
+      <div className="flex justify-center space-x-2 mt-4">
+        <button
+          onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+          disabled={currentPage === 1}
+          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Précédent
+        </button>
+
+        {start > 1 && <span className="px-2">...</span>}
+
+        {pageNumbers.map((num) => (
+          <button
+            key={num}
+            onClick={() => setCurrentPage(num)}
+            className={`px-3 py-1 rounded ${
+              currentPage === num
+                ? "bg-blue-600 text-white"
+                : "bg-gray-200 hover:bg-gray-300"
+            }`}
+          >
+            {num}
+          </button>
+        ))}
+
+        {end < totalPages && <span className="px-2">...</span>}
+
+        <button
+          onClick={() =>
+            setCurrentPage((prev) => Math.min(prev + 1, totalPages))
+          }
+          disabled={currentPage === totalPages}
+          className="px-3 py-1 bg-gray-200 rounded disabled:opacity-50"
+        >
+          Suivant
+        </button>
+      </div>
+    );
+  };
+
   const renderDashboard = () => {
+    if (!kpi) {
+      return (
+        <div className="flex flex-col h-[100vh]  items-center justify-center py-10 space-y-4">
+          <motion.div
+            className="flex space-x-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{
+              duration: 0.3,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          >
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+          </motion.div>
+
+          {/* Skeleton shimmer */}
+          <motion.div
+            className=" bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-md"
+            initial={{ backgroundPosition: "200% 0" }}
+            animate={{ backgroundPosition: "-200% 0" }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{
+              backgroundSize: "400% 100%",
+            }}
+          ></motion.div>
+
+          <p className="text-gray-500">Chargement des données...</p>
+        </div>
+      );
+    }
+
     const {
       patientAptitudeData,
       monthlyExaminationsData,
       chartOptions,
       cities,
-    } = prepareChartData();
+    } = prepareChartData(kpi, selectedCity);
 
     return (
       <div className="space-y-6">
@@ -731,7 +843,9 @@ export default function AdminDashboard() {
                 <option value="ALL">Toutes les villes</option>
                 {cities.map((city) => (
                   <option key={city} value={city}>
-                    {city}
+                    {city.includes("_")
+                      ? `${city.split("_")[0]} ${city.split("_")[1]}`
+                      : city}
                   </option>
                 ))}
               </select>
@@ -761,114 +875,136 @@ export default function AdminDashboard() {
     );
   };
 
-  const renderUserManagement = () => (
-    <div className="space-y-6">
-      <div className="flex justify-between items-center">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Gestion des utilisateurs
-        </h1>
-        <button
-          onClick={() => {
-            resetCreateForm();
-            setShowCreateModal(true);
-          }}
-          className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
-        >
-          <Plus className="h-4 w-4 mr-2" />
-          Créer un utilisateur
-        </button>
-      </div>
+  const renderUserManagement = () => {
+    return (
+      <div className="space-y-6">
+        <div className="flex justify-between items-center">
+          <h1 className="text-3xl font-bold text-gray-900">
+            Gestion des utilisateurs
+          </h1>
+          <div className="flex justify-between gap-x-4 items-center mb-4">
+            <input
+              type="text"
+              placeholder="Rechercher par nom, matricule ou rôle..."
+              value={searchQuery}
+              onChange={(e) => {
+                setSearchQuery(e.target.value);
+                setCurrentPage(1);
+              }}
+              className="px-4 py-2 border rounded-md w-fit focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
 
-      {usersLoading ? (
-        <div className="text-center py-8">Loading users...</div>
-      ) : usersError && users.length < 1 ? (
-        <div className="text-center py-8 text-red-600">Error: {usersError}</div>
-      ) : (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Nom
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Email
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Role
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Numéro de téléphone
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Ville
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm font-medium text-gray-900">
-                        {user.prénom} {user.nom}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="text-sm text-gray-900">{user.email}</div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <span
-                        className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                          user.role === "ADMIN"
-                            ? "bg-red-100 text-red-800"
-                            : user.role === "MEDECIN"
-                            ? "bg-blue-100 text-blue-800"
-                            : user.role === "PATIENT"
-                            ? "bg-green-100 text-green-800"
-                            : "bg-gray-100 text-gray-800"
-                        }`}
-                      >
-                        {user.role}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.telephone}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {user.ville}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <button
-                          onClick={() => handleEditUser(user)}
-                          className="text-blue-600 hover:text-blue-900"
-                        >
-                          <Edit className="h-4 w-4" />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteUser(user.id)}
-                          className="text-red-600 hover:text-red-900"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+            <button
+              onClick={() => {
+                resetCreateForm();
+                setShowCreateModal(true);
+              }}
+              className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors"
+            >
+              <Plus className="h-4 w-4 mr-2" />
+              Créer un utilisateur
+            </button>
           </div>
         </div>
-      )}
-    </div>
-  );
+
+        {usersLoading ? (
+          <div className="text-center py-8">Loading users...</div>
+        ) : usersError && users.length < 1 ? (
+          <div className="text-center py-8 text-red-600">
+            Error: {usersError}
+          </div>
+        ) : (
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Nom
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Role
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ville
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {currentUsers.map((user) => (
+                    <tr key={user.id} className="hover:bg-gray-50">
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">
+                          {user.prénom} {user.nom}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <span
+                          className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
+                            user.role === "ADMIN"
+                              ? "bg-red-100 text-red-800"
+                              : user.role === "MEDECIN"
+                              ? "bg-blue-100 text-blue-800"
+                              : user.role === "PATIENT"
+                              ? "bg-green-100 text-green-800"
+                              : "bg-gray-100 text-gray-800"
+                          }`}
+                        >
+                          {user.role}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                        {user.ville}
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-2">
+                          <button
+                            onClick={() => handleEditUser(user)}
+                            className="text-blue-600 hover:text-blue-900"
+                          >
+                            <Edit className="h-4 w-4" />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteUser(user.id)}
+                            className="text-red-600 hover:text-red-900"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+      </div>
+    );
+  };
+
+  const patients = users.filter((user) => user.role === "PATIENT");
+
+  const [doctorSearchTerm, setDoctorSearchTerm] = useState("");
+  const filteredPatients = useMemo(() => {
+    return patients.filter(
+      (p) =>
+        (!patientSearchTermFilter ||
+          `${p.prénom} ${p.nom}`
+            .toLowerCase()
+            .includes(patientSearchTermFilter.toLowerCase()) ||
+          (p.matriculeId &&
+            p.matriculeId
+              .toLowerCase()
+              .includes(patientSearchTermFilter.toLowerCase()))) &&
+        (p.medecinId === selectedDoctor || true)
+    );
+  }, [patients, patientSearchTermFilter, selectedDoctor]);
 
   const renderRdvManagement = () => {
-    const patients = users.filter((user) => user.role === "PATIENT");
     const doctors = users.filter((user) => user.role === "MEDECIN");
 
     return (
@@ -979,7 +1115,7 @@ export default function AdminDashboard() {
                   <thead className="bg-gray-50">
                     <tr>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Date 
+                        Date
                       </th>
 
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -1088,17 +1224,30 @@ export default function AdminDashboard() {
                       <label className="block text-sm font-medium text-gray-700 mb-1">
                         Médecin
                       </label>
+                      <input
+                        type="text"
+                        placeholder="Rechercher un médecin..."
+                        value={doctorSearchTerm}
+                        onChange={(e) => setDoctorSearchTerm(e.target.value)}
+                        className="w-full mb-2 px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500"
+                      />
                       <select
                         value={selectedDoctor}
                         onChange={handleDoctorChange}
                         className="w-full px-3 py-2 border rounded-md focus:ring-2 focus:ring-blue-500 h-10"
                       >
                         <option value="">Sélectionner</option>
-                        {doctors.map((d) => (
-                          <option key={d.id} value={d.id}>
-                            Dr. {d.prénom} {d.nom}
-                          </option>
-                        ))}
+                        {doctors
+                          .filter((d) =>
+                            `${d.prénom} ${d.nom}`
+                              .toLowerCase()
+                              .includes(doctorSearchTerm.toLowerCase())
+                          )
+                          .map((d) => (
+                            <option key={d.id} value={d.id}>
+                              Dr. {d.prénom} {d.nom}
+                            </option>
+                          ))}
                       </select>
                     </div>
                     <div className="mb-4">
@@ -1139,46 +1288,49 @@ export default function AdminDashboard() {
 
                         {/* Filtered checkbox list */}
                         <div className="border rounded-md p-2 max-h-40 overflow-auto">
-                          {patients
-                            .filter(
-                              (p) =>
-                                (!patientSearchTermFilter ||
-                                  `${p.prénom} ${p.nom}`
-                                    .toLowerCase()
-                                    .includes(
-                                      patientSearchTermFilter.toLowerCase()
-                                    ) ||
-                                  (p.matriculeId &&
-                                    p.matriculeId
-                                      .toLowerCase()
-                                      .includes(
-                                        patientSearchTermFilter.toLowerCase()
-                                      ))) &&
-                                (p.medecinId === selectedDoctor || true)
-                            )
-                            .map((p) => (
-                              <label
-                                key={p.id}
-                                className="flex items-center mb-1"
-                              >
-                                <input
-                                  type="checkbox"
-                                  value={p.id}
-                                  checked={selectedPatients.includes(p.id)}
-                                  onChange={handlePatientToggle}
-                                  className="mr-2"
-                                />
-                                {p.prénom} {p.nom}
-                                {p.matriculeId && (
-                                  <span className="ml-2 text-xs text-gray-400">
-                                    ({p.matriculeId})
-                                  </span>
-                                )}
-                              </label>
-                            ))}
+                          <List
+                            height={120} // max height
+                            itemCount={filteredPatients.length}
+                            itemSize={35} // height of one checkbox row
+                            width="100%"
+                          >
+                            {({ index, style }) => {
+                              const p = filteredPatients[index];
+                              return (
+                                <label
+                                  key={p.id}
+                                  style={style}
+                                  className="flex items-center"
+                                >
+                                  <input
+                                    type="checkbox"
+                                    value={p.id}
+                                    checked={selectedPatients.includes(p.id)}
+                                    onChange={handlePatientToggle}
+                                    className="mr-2"
+                                  />
+                                  {p.prénom} {p.nom}
+                                  {p.matriculeId && (
+                                    <span className="ml-2 text-xs text-gray-400">
+                                      ({p.matriculeId})
+                                    </span>
+                                  )}
+                                </label>
+                              );
+                            }}
+                          </List>
                         </div>
                       </div>
                     )}
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      {selectedPatients
+                        .map((id) => {
+                          const patient = patients.find((p) => p.id === id);
+                          return patient ? `${patient.nom} ${patient.prénom}` : "";
+                        })
+                        .filter(Boolean) 
+                        .join(", ")}
+                    </label>
 
                     {/* Date and starting time */}
                     <div className="grid grid-cols-2 gap-4 mb-6">
@@ -1421,7 +1573,7 @@ export default function AdminDashboard() {
               <div className="relative">
                 <input
                   type="text"
-                  placeholder="Tapez le nom ou l'email du patient..."
+                  placeholder="Tapez le nom ou le matricule du patient..."
                   value={patientSearchTerm}
                   onChange={(e) => {
                     setPatientSearchTerm(e.target.value);
@@ -1446,7 +1598,6 @@ export default function AdminDashboard() {
                 value={selectedPatientId}
                 onChange={(e) => {
                   handlePatientSelect(e.target.value);
-                  // Clear search when selecting from dropdown
                   if (e.target.value) {
                     setPatientSearchTerm("");
                   }
@@ -1456,7 +1607,7 @@ export default function AdminDashboard() {
                 <option value="">Sélectionnez un patient...</option>
                 {patients.map((patient) => (
                   <option key={patient.id} value={patient.id}>
-                    {patient.prénom} {patient.nom} - {patient.email}
+                    {patient.prénom} {patient.nom} - {patient.matriculeId}
                   </option>
                 ))}
               </select>
@@ -1501,7 +1652,7 @@ export default function AdminDashboard() {
                       `${patient.prénom} ${patient.nom}`
                         .toLowerCase()
                         .includes(patientSearchTerm.toLowerCase()) ||
-                      patient.email
+                      patient.matriculeId
                         .toLowerCase()
                         .includes(patientSearchTerm.toLowerCase())
                   ).length === 0 && (
@@ -1528,7 +1679,7 @@ export default function AdminDashboard() {
                   <strong>Email:</strong> {selectedPatient.email}
                 </p>
                 <p>
-                  <strong>numéro de téléphone:</strong>{" "}
+                  <strong>Numéro de téléphone:</strong>{" "}
                   {selectedPatient.telephone}
                 </p>
                 <p>
@@ -1955,29 +2106,6 @@ export default function AdminDashboard() {
                   )}
                 </div>
               </div>
-              {editForm.role == "PATIENT" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Chantier
-                  </label>
-                  <input
-                    type="text"
-                    name="chantier"
-                    value={editForm.chantier}
-                    onChange={handleInputChange}
-                    className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 ${
-                      formErrors.chantier
-                        ? "border-red-500 focus:ring-red-500"
-                        : "border-gray-300 focus:ring-blue-500"
-                    }`}
-                  />
-                  {formErrors.chantier && (
-                    <p className="text-red-500 text-sm mt-1">
-                      {formErrors.chantier}
-                    </p>
-                  )}
-                </div>
-              )}
 
               <div className="flex justify-end space-x-4 mt-6">
                 <button
@@ -2058,7 +2186,12 @@ export default function AdminDashboard() {
             transition={{ duration: 0.2 }}
           >
             {activeSection === "dashboard" && renderDashboard()}
-            {activeSection === "users" && renderUserManagement()}
+            {activeSection === "users" && (
+              <>
+                <div>{renderUserManagement()}</div>
+                <div>{renderPagination()}</div>
+              </>
+            )}
             {activeSection === "rdv" && renderRdvManagement()}
             {activeSection === "history" && renderUserHistory()}
           </motion.div>

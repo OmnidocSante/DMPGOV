@@ -29,6 +29,7 @@
     "react-hook-form": "^7.57.0",
     "react-icons": "^5.5.0",
     "react-router-dom": "^7.6.2",
+    "react-window": "^1.8.11",
     "tailwind-merge": "^3.3.0",
     "tailwindcss": "^4.1.8",
     "zod": "^3.25.51"

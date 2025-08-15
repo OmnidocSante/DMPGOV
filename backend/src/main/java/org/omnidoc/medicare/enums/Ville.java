@@ -54,5 +54,14 @@ public enum Ville {
     TAOURIRT,
     KASBA_TADLA,
     SIDI_SLIMANE,
-    AL_HOCEIMA
+    AL_HOCEIMA,
+    GUINEE,
+    DIVERS,
+    JORF_LASFER,
+    DJIBOUTI,
+    TAROUDANTE,
+    SENIGAL,
+    MHIRIZ,
+    KHENIFRA,
+    SENEGAL
 }

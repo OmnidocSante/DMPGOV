@@ -1,13 +1,15 @@
 package org.omnidoc.medicare.service.users;
 
 import lombok.RequiredArgsConstructor;
+import org.omnidoc.medicare.dto.UserDTO;
 import org.omnidoc.medicare.entity.users.Medecin;
 import org.omnidoc.medicare.entity.users.User;
 import org.omnidoc.medicare.enums.Role;
+import org.omnidoc.medicare.enums.Status;
+import org.omnidoc.medicare.enums.Ville;
 import org.omnidoc.medicare.exceptions.ApiException;
-import org.omnidoc.medicare.repository.DossierMedicaleRepo;
-import org.omnidoc.medicare.repository.MedecinRepo;
-import org.omnidoc.medicare.repository.UserRepo;
+import org.omnidoc.medicare.repository.*;
+import org.omnidoc.medicare.response.KpiResponse;
 import org.omnidoc.medicare.service.auth.JwtService;
 import org.omnidoc.medicare.utils.DossierMedicaleUtil;
 import org.omnidoc.medicare.utils.EmailService;
@@ -30,29 +32,80 @@ public class UserService {
     private final EmailService emailService;
     private final DossierMedicaleRepo dossierMedicaleRepo;
     private final JwtService jwtService;
+    private final PatientRepo patientRepo;
+    private final RdvRepo rdvRepo;
 
-    public List<User> getAllUsers() {
-        return userRepository.findAll().stream()
+    public KpiResponse kpiResponse() {
+        KpiResponse response = new KpiResponse();
+
+        // Count total users
+        long totalUsers = userRepository.count();
+        response.setUserCount(totalUsers);
+
+        // Count total doctors
+        long totalDoctors = medecinRepo.count();
+        response.setDoctorCount(totalDoctors);
+
+        // Count total patients
+        long totalPatients = patientRepo.count();
+        response.setPatientCount(totalPatients);
+
+        // Count total rdvs
+        long totalRdvs = rdvRepo.count();
+        response.setRdvCount(totalRdvs);
+
+        // Map of APTE / NON_APTE per ville
+        Map<String, Map<String, Integer>> aptesPerVilles = new HashMap<>();
+
+        // Single query grouping by ville and status
+        List<Object[]> counts = patientRepo.countByVilleAndStatus();
+        for (Object[] row : counts) {
+            Ville ville = (Ville) row[0];
+            Status status = (Status) row[1];
+            Long count = (Long) row[2];
+
+            aptesPerVilles.computeIfAbsent(ville.name(), k -> new HashMap<>()).put(status == Status.APTE ? "APTE" : "NON_APTE", count.intValue());
+        }
+
+        // Ensure every ville has both keys
+        for (Ville ville : Ville.values()) {
+            aptesPerVilles.computeIfAbsent(ville.name(), k -> new HashMap<>());
+            aptesPerVilles.get(ville.name()).putIfAbsent("APTE", 0);
+            aptesPerVilles.get(ville.name()).putIfAbsent("NON_APTE", 0);
+        }
+
+        response.setAptesPerVilles(aptesPerVilles);
+
+        return response;
+    }
+
+
+    public List<UserDTO> getAllUsers() {
+        return userRepository.findAllUsersNoJoins()
+                .stream()
                 .map(u -> {
                     try {
-                        u.setMatriculeId(Util.decryptIfNotNull(u.getMatriculeId()));
-                        u.setNom(Util.decryptIfNotNull(u.getNom()));
-                        u.setPrénom(Util.decryptIfNotNull(u.getPrénom()));
-                        u.setAdresse(Util.decryptIfNotNull(u.getAdresse()));
-                        u.setCinId(Util.decryptIfNotNull(u.getCinId()));
-                        if (u.getPatient() != null) {
-                            u.getPatient().setChantier(Util.decryptIfNotNull(u.getPatient().getChantier()));
-                        }
+                        return new UserDTO(
+                                u.getId(),
+                                Util.decryptIfNotNull(u.getNom()),
+                                Util.decryptIfNotNull(u.getPrénom()),
+                                u.getSexe(),
+                                u.getDateNaissance(),
+                                Util.decryptIfNotNull(u.getCinId()),
+                                Util.decryptIfNotNull(u.getMatriculeId()),
+                                u.getVille(),
+                                Util.decryptIfNotNull(u.getAdresse()),
+                                u.getTelephone(),
+                                u.getEmail(),
+                                u.getRole(),
+                                u.getDateEntree(),
+                                Util.decryptIfNotNull(u.getProfession())
 
-
+                        );
                     } catch (Exception e) {
-                        System.out.println("error is" + e.getMessage());
-                        u.setMatriculeId(null);
-                        u.setNom(null);
-                        u.setPrénom(null);
-                        u.setAdresse(null);
+                        System.out.println("error is " + e.getMessage());
+                        return new UserDTO(u.getId(), null, null, u.getSexe(), u.getDateNaissance(), null, null, u.getVille(), null, u.getTelephone(), u.getEmail(), u.getRole(), u.getDateEntree(), u.getProfession());
                     }
-                    return u;
                 })
                 .toList();
     }
@@ -66,7 +119,7 @@ public class UserService {
         String username = jwtService.extractUsername(token);
         User user = userRepo.findByEmail(username).orElseThrow(() -> new ApiException("Doctor not found"));
         HashMap<String, String> result = new HashMap<>();
-        result.put("email",user.getEmail());
+        result.put("email", user.getEmail());
         result.put("firstName", Util.decryptIfNotNull(user.getNom()));
         result.put("lastName", Util.decryptIfNotNull(user.getPrénom()));
         return result;
@@ -101,10 +154,7 @@ public class UserService {
         User createdUser = userRepo.save(user);
 
         String subject = "Création de votre mot de passe";
-        String body = "Bonjour,\n\n" +
-                "Un compte vient d'être créé pour vous sur notre plateforme.\n" +
-                "Veuillez cliquer sur le lien suivant pour définir votre mot de passe :\n\n" +
-                "http://localhost:5173/create-password?token=" + rawPasswordCreationToken + "\n\n";
+        String body = "Bonjour,\n\n" + "Un compte vient d'être créé pour vous sur notre plateforme.\n" + "Veuillez cliquer sur le lien suivant pour définir votre mot de passe :\n\n" + "http://localhost:5173/create-password?token=" + rawPasswordCreationToken + "\n\n";
 
 //        emailService.sendEmail(user.getEmail(), subject, body);
 
@@ -126,40 +176,13 @@ public class UserService {
     }
 
     public User editUser(Long id, User updatedUser) throws Exception {
-        System.out.println(updatedUser);
-        System.out.println(updatedUser.getPrénom());
-        User existingUser = userRepository.findById(id).orElseThrow(() -> new ApiException("Utilisateur non trouvé avec l'ID: " + id));
+        User existingUser = userRepository.findById(id)
+                .orElseThrow(() -> new ApiException("Utilisateur non trouvé avec l'ID: " + id));
 
-        existingUser.setNom(Util.encryptIfNotNull(updatedUser.getNom()));
-        existingUser.setPrénom(Util.encryptIfNotNull(updatedUser.getPrénom()));
-        existingUser.setSexe(updatedUser.getSexe());
-        existingUser.setDateNaissance(updatedUser.getDateNaissance());
-        existingUser.setVille(updatedUser.getVille());
-        existingUser.setAdresse(updatedUser.getAdresse());
-        existingUser.setProfession(updatedUser.getProfession());
-        existingUser.setMatriculeId(Util.encryptIfNotNull(updatedUser.getMatriculeId()));
-        existingUser.setAdresse(Util.encryptIfNotNull(updatedUser.getAdresse()));
-        existingUser.setPassword(existingUser.getPassword());
-        existingUser.setCinId(Util.encryptIfNotNull(updatedUser.getCinId()));
-        existingUser.getPatient().setChantier(Util.encryptIfNotNull(updatedUser.getChantier()));
-
-        if (!existingUser.getEmail().equals(updatedUser.getEmail())) {
-            if (userRepo.existsByEmail(updatedUser.getEmail())) {
-                throw new ApiException("Cet email est déjà utilisé par un autre compte");
-            }
-            existingUser.setEmail(updatedUser.getEmail());
-        }
-
-
-        if (!existingUser.getTelephone().equals(updatedUser.getTelephone())) {
-            if (userRepo.existsByTelephone(updatedUser.getTelephone())) {
-                throw new ApiException("Ce numéro de téléphone est déjà associé à un autre compte");
-            }
-            existingUser.setTelephone(updatedUser.getTelephone());
-        }
-
+        // Decrypt before overwriting
         String existingNom = Util.decryptIfNotNull(existingUser.getNom());
         String existingPrenom = Util.decryptIfNotNull(existingUser.getPrénom());
+
         String updatedNom = updatedUser.getNom();
         String updatedPrenom = updatedUser.getPrénom();
 
@@ -169,15 +192,39 @@ public class UserService {
             }
         }
 
+        // Now encrypt for saving
+        existingUser.setNom(Util.encryptIfNotNull(updatedNom));
+        existingUser.setPrénom(Util.encryptIfNotNull(updatedPrenom));
+        existingUser.setSexe(updatedUser.getSexe());
+        existingUser.setDateNaissance(updatedUser.getDateNaissance());
+        existingUser.setVille(updatedUser.getVille());
+        existingUser.setAdresse(Util.encryptIfNotNull(updatedUser.getAdresse()));
+        existingUser.setProfession(Util.encryptIfNotNull(updatedUser.getProfession()));
+        existingUser.setMatriculeId(Util.encryptIfNotNull(updatedUser.getMatriculeId()));
+        existingUser.setCinId(Util.encryptIfNotNull(updatedUser.getCinId()));
+
+        if (existingUser.getEmail() != null &&
+                !existingUser.getEmail().equals(updatedUser.getEmail())) {
+            if (userRepo.existsByEmail(updatedUser.getEmail())) {
+                throw new ApiException("Cet email est déjà utilisé par un autre compte");
+            }
+            existingUser.setEmail(updatedUser.getEmail());
+        }
+
+        if (existingUser.getTelephone() != null &&
+                !existingUser.getTelephone().equals(updatedUser.getTelephone())) {
+            if (userRepo.existsByTelephone(updatedUser.getTelephone())) {
+                throw new ApiException("Ce numéro de téléphone est déjà associé à un autre compte");
+            }
+            existingUser.setTelephone(updatedUser.getTelephone());
+        }
 
         if (updatedUser.getPassword() != null && !updatedUser.getPassword().isEmpty()) {
             existingUser.setPassword(passwordEncoder.encode(updatedUser.getPassword()));
         }
 
-
         if (existingUser.getRole() != updatedUser.getRole()) {
             existingUser.setRole(updatedUser.getRole());
-
         }
 
         return userRepository.save(existingUser);

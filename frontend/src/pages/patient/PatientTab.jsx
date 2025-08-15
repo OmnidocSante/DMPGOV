@@ -47,6 +47,8 @@ export default function PatientTab() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
+  console.log(patient);
+
   const [planMedical, setPlanMedical] = useState("");
   const [isPlanMedicalDialogOpen, setIsPlanMedicalDialogOpen] = useState(false);
   const updatePlanMedical = async () => {
@@ -899,7 +901,9 @@ export default function PatientTab() {
                   Date de naissance
                 </p>
                 <p className="font-medium">
-                  {format(patient?.user?.dateNaissance, "yyyy/MM/dd")}
+                  {patient?.user?.dateNaissance
+                    ? format(patient?.user?.dateNaissance, "yyyy/MM/dd")
+                    : "Non specifié"}
                 </p>
               </div>
               <div className="bg-bay-of-many-50 p-4 rounded-lg">

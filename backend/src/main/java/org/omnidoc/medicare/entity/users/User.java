@@ -59,7 +59,7 @@ public class User implements UserDetails {
     private String adresse;
 
 
-    @Column(nullable = false)
+    @Column(nullable = true)
     private String telephone;
 
 
@@ -125,10 +125,10 @@ public class User implements UserDetails {
         return true;
     }
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Patient patient;
 
-    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)
     private Medecin medecin;
 
 

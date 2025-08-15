@@ -374,6 +374,44 @@ export default function DoctorDashboard() {
   const renderDashboard = () => {
     const monthlyExaminationsData = prepareMonthlyChartData();
 
+    if (users.length < 1) {
+      return (
+        <div className="flex flex-col h-[100vh]  items-center justify-center py-10 space-y-4">
+          <motion.div
+            className="flex space-x-2"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{
+              duration: 0.3,
+              repeat: Infinity,
+              repeatType: "reverse",
+            }}
+          >
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+            <span className="w-3 h-3 bg-blue-500 rounded-full"></span>
+          </motion.div>
+
+          {/* Skeleton shimmer */}
+          <motion.div
+            className=" bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 rounded-md"
+            initial={{ backgroundPosition: "200% 0" }}
+            animate={{ backgroundPosition: "-200% 0" }}
+            transition={{
+              duration: 1.5,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+            style={{
+              backgroundSize: "400% 100%",
+            }}
+          ></motion.div>
+
+          <p className="text-gray-500">Chargement des données...</p>
+        </div>
+      );
+    }
+
     return (
       <div className="space-y-6">
         <h1 className="text-3xl font-bold text-gray-900">
