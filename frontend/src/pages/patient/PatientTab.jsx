@@ -475,7 +475,7 @@ export default function PatientTab() {
                 <div className="flex  gap-4">
                   <div
                     className={` min-w-22 bg-bay-of-many-100 ${
-                      patient.image ?? "p-3"
+                      patient.image ?? "p-3  items-center flex justify-center"
                     }  rounded-full`}
                   >
                     {patient.image ? (
