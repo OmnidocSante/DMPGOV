@@ -38,7 +38,7 @@ public class AntecedentsProfessionelsService {
     }
 
     private AntecedentsProfessionnels getAntecedentsProfessionnels(AntecedentsProfessionnels antecedentsProfessionnels) throws Exception {
-        antecedentsProfessionnels.setAffectionsCongenitales(Util.decryptIfNotNull(antecedentsProfessionnels.getIntoxicationsNonProfessionnelles()));
+        antecedentsProfessionnels.setAffectionsCongenitales(Util.decryptIfNotNull(antecedentsProfessionnels.getAffectionsCongenitales()));
         antecedentsProfessionnels.setMaladies(Util.decryptIfNotNull(antecedentsProfessionnels.getMaladies()));
         antecedentsProfessionnels.setInterventionsChirurgicales(Util.decryptIfNotNull(antecedentsProfessionnels.getInterventionsChirurgicales()));
         antecedentsProfessionnels.setAccidentsDuTravail(Util.decryptIfNotNull(antecedentsProfessionnels.getAccidentsDuTravail()));

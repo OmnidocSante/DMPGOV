@@ -15,6 +15,7 @@ export default function AntecedentsProfessionnelsDetails() {
   const navigate = useNavigate();
   const { id } = useParams();
   const [antecedents, setAntecedents] = useState(null);
+  
   const [historique, setHistorique] = useState([]);
   const [isHistory, setIsHistory] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -26,6 +27,7 @@ export default function AntecedentsProfessionnelsDetails() {
       const response = await instance.get(url);
 
       const data = response.data;
+    
 
       setAntecedents(data);
     } catch (err) {
@@ -51,7 +53,7 @@ export default function AntecedentsProfessionnelsDetails() {
 
   const handleSave = async () => {
     if (!isEditMode || isHistory || !antecedents) return;
-
+    
     try {
 
       if (!antecedents.id) {
@@ -60,7 +62,7 @@ export default function AntecedentsProfessionnelsDetails() {
       }
 
       await instance.put(
-        `/api/antecedents-professionnels/dossier/${antecedents.id}`,
+        `/api/antecedents-professionnels/patient/${id}`,
         antecedents
       );
 
