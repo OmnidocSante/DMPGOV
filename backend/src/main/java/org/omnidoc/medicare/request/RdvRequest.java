@@ -27,7 +27,6 @@ public class RdvRequest {
     private Long medecinId;
 
     @NotNull(message = "La date du rendez-vous est obligatoire")
-    @FutureOrPresent(message = "La date du rendez-vous doit être dans le présent ou le futur")
     private Date date;
 
     private TypeRdv typeRdv;
