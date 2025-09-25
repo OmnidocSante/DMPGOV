@@ -42,6 +42,7 @@ ChartJS.register(
   Tooltip,
   Legend
 );
+import { FixedSizeList as List } from "react-window";
 
 const useUsers = () => {
   const [users, setUsers] = useState([]);
@@ -110,8 +111,6 @@ const useDoctorRdv = () => {
   };
 
   const createRdv = async (rdvData) => {
-    console.log(rdvData);
-
     try {
       const response = await instance.post(
         "/api/rdv/create-by-doctor",
@@ -520,7 +519,6 @@ export default function DoctorDashboard() {
   const handleInputChange = (e) => {
     setPersonSearchTerm(e.target.value);
   };
-  console.log(users);
 
   const filteredPatients = users.filter(
     (user) =>
@@ -542,8 +540,6 @@ export default function DoctorDashboard() {
     { label: "DEPART", data: "DEPART" },
     { label: "SPONTANNEE", data: "SPONTANNEE" },
   ];
-  console.log(rdvForm);
-  console.log(rdvs);
 
   const renderRdvManagement = () => {
     // const patients = users.filter((user) => user.role === "PATIENT");
@@ -780,7 +776,6 @@ export default function DoctorDashboard() {
                         placeholder="Rechercher un patient… ( nom, prénom,matricule ) "
                         className="w-full mb-2 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                       />
-
                       <select
                         value={rdvForm.patientId}
                         onChange={(e) =>

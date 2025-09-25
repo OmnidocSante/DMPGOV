@@ -47,7 +47,6 @@ export default function PatientTab() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [patient, setPatient] = useState(null);
-  console.log(patient);
 
   const [planMedical, setPlanMedical] = useState("");
   const [isPlanMedicalDialogOpen, setIsPlanMedicalDialogOpen] = useState(false);

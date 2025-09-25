@@ -24,7 +24,6 @@ export default function ExamenVasculaire() {
     setError(null);
     try {
       const res = await instance.get(url);
-      console.log(res.data);
       
       setExamen(res.data);
     } catch (err) {
@@ -48,8 +47,6 @@ export default function ExamenVasculaire() {
   const handleSave = async () => {
     if (!isEditMode || isHistory || !examen?.id) return;
     try {
-        console.log(examen);
-        
       await instance.put(`/api/examens/vasculaire/patient/${id}`, examen);
       setIsEditMode(false);
       fetchData(`/api/examens/vasculaire/patient/${id}`);

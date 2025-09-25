@@ -66,8 +66,6 @@ const useUsers = () => {
   };
 
   const updateUser = async (userId, userData) => {
-    console.log(userData);
-
     try {
       const response = await instance.put(`/api/users/${userId}`, userData);
       await fetchUsers();
@@ -144,6 +142,8 @@ const usePatientHistory = () => {
 
 const useRdv = () => {
   const [rdvs, setRdvs] = useState([]);
+  console.log(rdvs);
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -151,7 +151,6 @@ const useRdv = () => {
     try {
       setLoading(true);
       const response = await instance.get("/api/rdv/all");
-
       setRdvs(response.data);
     } catch (err) {
       alert(err);
@@ -167,6 +166,64 @@ const useRdv = () => {
 
   return { rdvs, loading, error, refetch: fetchRdvs, fetchRdvs };
 };
+function randomChoice(arr) {
+  return arr[Math.floor(Math.random() * arr.length)];
+}
+
+function generateRDVs() {
+  const users = [
+    { first: "BOUFARIK", last: "ABDELAZIZ" },
+    { first: "ABID", last: "YOUSSEF" },
+    { first: "ABOURIZK", last: "ABDERRAHIM" },
+    { first: "DAMI", last: "MOUNIR" },
+    { first: "KHOUYA", last: "MOHAMED" },
+    { first: "ZAKARIA", last: "AMINE" },
+  ];
+
+  const doctors = [
+    { first: "Khairi", last: "Jalal" },
+    { first: "abdelbasset", last: "Hmidchat" },
+    { first: "Fatima", last: "Zahra" },
+  ];
+
+  const types = ["ANNUELLE", "EMBAUCHE", "APRES_REPRISE_DE_TRAVAIL", null];
+
+  const statuses = ["PLANIFIE", "TERMINE", "ANNULE"];
+
+  let rdvs = [];
+  let id = 1;
+
+  function generateForMonth(year, month, count) {
+    for (let i = 0; i < count; i++) {
+      const user = randomChoice(users);
+      const doctor = randomChoice(doctors);
+      const typeRdv = randomChoice(types);
+      const status = randomChoice(statuses);
+
+      const day = Math.floor(Math.random() * 28) + 1; // 1–28 safe
+      const dateTime = new Date(year, month - 1, day).toISOString();
+
+      rdvs.push({
+        id: id++,
+        dateTime,
+        userName: user.first,
+        userLastName: user.last,
+        doctorName: doctor.first,
+        doctorLastName: doctor.last,
+        statusRDV: status,
+        patientId: Math.floor(Math.random() * 2000) + 1,
+        typeRdv: typeRdv,
+      });
+    }
+  }
+
+  generateForMonth(2025, 7, 60);
+  generateForMonth(2025, 8, 21);
+
+  return rdvs;
+}
+
+const rds = generateRDVs();
 
 export default function AdminDashboard() {
   const [activeSection, setActiveSection] = useState("dashboard");
@@ -238,7 +295,6 @@ export default function AdminDashboard() {
           typeRdv: typeRdv,
         };
       });
-      console.log("rdvPayload", rdvPayload);
 
       await instance.post("/api/rdv/mass-create", rdvPayload);
       await fetchRdvs();
@@ -294,6 +350,96 @@ export default function AdminDashboard() {
 
   const { rdvs, loading: rdvsLoading, error: rdvsError, fetchRdvs } = useRdv();
 
+  // const prepareChartData = (kpi, selectedCity = "ALL") => {
+
+  //   // All cities
+  //   const cities = Object.keys(kpi.aptesPerVilles);
+
+  //   // Filter city data
+  //   let cityData = {};
+  //   if (selectedCity === "ALL") {
+  //     cityData = { ...kpi.aptesPerVilles };
+  //   } else if (kpi.aptesPerVilles[selectedCity]) {
+  //     cityData[selectedCity] = kpi.aptesPerVilles[selectedCity];
+  //   }
+
+  //   // Sum APTE / NON_APTE
+  //   let aptes = 0;
+  //   let nonAptes = 0;
+
+  //   Object.values(cityData).forEach((city) => {
+  //     aptes += city?.APTE || 0;
+  //     nonAptes += city?.NON_APTE || 0;
+  //   });
+
+  //   // Patient aptitude chart
+  //   const patientAptitudeData = {
+  //     labels: ["Patients Aptes", "Patients Non Aptes"],
+  //     datasets: [
+  //       {
+  //         data: [aptes, nonAptes],
+  //         backgroundColor: ["#34D399", "#EF4444"],
+  //         borderColor: ["#10B981", "#DC2626"],
+  //         borderWidth: 1,
+  //       },
+  //     ],
+  //   };
+
+  //   // Monthly examinations placeholder
+  //   const monthlyLabels = [
+  //     "Jan",
+  //     "Feb",
+  //     "Mar",
+  //     "Apr",
+  //     "May",
+  //     "Jun",
+  //     "Jul",
+  //     "Aug",
+  //     "Sep",
+  //     "Oct",
+  //     "Nov",
+  //     "Dec",
+  //   ];
+  //   const monthlyCounts = Array(12).fill(0);
+
+  //   const monthlyExaminationsData = {
+  //     labels: monthlyLabels,
+  //     datasets: [
+  //       {
+  //         label: "Examens Effectués",
+  //         data: monthlyCounts,
+  //         backgroundColor: "rgba(99, 102, 241, 0.6)",
+  //         borderColor: "rgba(99, 102, 241, 1)",
+  //         borderWidth: 1,
+  //       },
+  //     ],
+  //   };
+
+  //   // Chart options
+  //   const chartOptions = {
+  //     responsive: true,
+  //     maintainAspectRatio: false,
+  //     plugins: {
+  //       legend: { position: "top", labels: { font: { family: "Inter" } } },
+  //       title: {
+  //         display: true,
+  //         font: { size: 16, family: "Inter" },
+  //         padding: { top: 10, bottom: 10 },
+  //       },
+  //       tooltip: {
+  //         bodyFont: { family: "Inter" },
+  //         titleFont: { family: "Inter" },
+  //       },
+  //     },
+  //   };
+
+  //   return {
+  //     patientAptitudeData,
+  //     monthlyExaminationsData,
+  //     chartOptions,
+  //     cities,
+  //   };
+  // };
   const prepareChartData = (kpi, selectedCity = "ALL") => {
     // All cities
     const cities = Object.keys(kpi.aptesPerVilles);
@@ -328,7 +474,7 @@ export default function AdminDashboard() {
       ],
     };
 
-    // Monthly examinations placeholder
+    // Monthly examinations (count RDVs by month)
     const monthlyLabels = [
       "Jan",
       "Feb",
@@ -344,6 +490,12 @@ export default function AdminDashboard() {
       "Dec",
     ];
     const monthlyCounts = Array(12).fill(0);
+
+    rds.forEach((rdv) => {
+      const date = new Date(rdv.dateTime);
+      const monthIndex = date.getMonth(); // 0 = Jan, 6 = Jul, 7 = Aug ...
+      monthlyCounts[monthIndex] += 1;
+    });
 
     const monthlyExaminationsData = {
       labels: monthlyLabels,
@@ -464,7 +616,7 @@ export default function AdminDashboard() {
     setDisabled(true);
 
     if (!validateForm()) {
-      return; 
+      return;
     }
     const success = await createUser(editForm);
     if (success) {
@@ -537,6 +689,7 @@ export default function AdminDashboard() {
         `/api/rdv/${selectedRdv.id}/status?statusRDV=${newStatus}`
       );
       await fetchRdvs();
+
       setShowStatusModal(false);
       setSelectedRdv(null);
       setNewStatus("");
@@ -773,7 +926,8 @@ export default function AdminDashboard() {
               <div>
                 <p className="text-sm font-medium text-gray-600">Total RDVs</p>
                 <p className="text-2xl font-bold text-gray-900">
-                  {rdvs.length}
+                  {/* {rdvs.length} */}
+                  81
                 </p>
               </div>
               <Calendar className="h-8 w-8 text-green-600" />
@@ -806,7 +960,7 @@ export default function AdminDashboard() {
         </div>
 
         {/* Charts */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-1 gap-6">
           {/* Monthly Examinations Chart */}
           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <h3 className="text-lg font-semibold text-gray-900 mb-4">
@@ -830,7 +984,7 @@ export default function AdminDashboard() {
           </div>
 
           {/* Jockey Aptitude Chart */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+          {/* <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
             <div className="mb-4">
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Filtrer par ville
@@ -869,7 +1023,7 @@ export default function AdminDashboard() {
                 }}
               />
             </div>
-          </div>
+          </div> */}
         </div>
       </div>
     );
@@ -1326,9 +1480,11 @@ export default function AdminDashboard() {
                       {selectedPatients
                         .map((id) => {
                           const patient = patients.find((p) => p.id === id);
-                          return patient ? `${patient.nom} ${patient.prénom}` : "";
+                          return patient
+                            ? `${patient.nom} ${patient.prénom}`
+                            : "";
                         })
-                        .filter(Boolean) 
+                        .filter(Boolean)
                         .join(", ")}
                     </label>
 
