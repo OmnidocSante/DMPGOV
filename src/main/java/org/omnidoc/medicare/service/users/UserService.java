@@ -79,6 +79,15 @@ public class UserService {
         return response;
     }
 
+    private String safeDecrypt(String value, String fieldName) {
+        try {
+            return Util.decryptIfNotNull(value);
+        } catch (Exception e) {
+            System.out.println("Failed to decrypt field " + fieldName + ": " + e.getMessage());
+            return null;
+        }
+    }
+
 
     public List<UserDTO> getAllUsers() {
         return userRepository.findAllUsersNoJoins()
@@ -87,25 +96,25 @@ public class UserService {
                     try {
                         return new UserDTO(
                                 u.getId(),
-                                Util.decryptIfNotNull(u.getNom()),
-                                Util.decryptIfNotNull(u.getPrénom()),
+                                safeDecrypt(u.getNom(), "nom"),
+                                safeDecrypt(u.getPrénom(), "prénom"),
                                 u.getSexe(),
                                 u.getDateNaissance(),
-                                Util.decryptIfNotNull(u.getCinId()),
-                                Util.decryptIfNotNull(u.getMatriculeId()),
+                                safeDecrypt(u.getCinId(), "cinId"),
+                                safeDecrypt(u.getMatriculeId(), "matriculeId"),
                                 u.getVille(),
-                                Util.decryptIfNotNull(u.getAdresse()),
+                                safeDecrypt(u.getAdresse(), "adresse"),
                                 u.getTelephone(),
                                 u.getEmail(),
                                 u.getRole(),
                                 u.getDateEntree(),
-                                Util.decryptIfNotNull(u.getProfession())
-
+                                safeDecrypt(u.getProfession(), "profession")
                         );
                     } catch (Exception e) {
-                        System.out.println("error is " + e.getMessage());
+                        System.out.println("Failed to decrypt user " + u.getId() + ": " + e.getMessage());
                         return new UserDTO(u.getId(), null, null, u.getSexe(), u.getDateNaissance(), null, null, u.getVille(), null, u.getTelephone(), u.getEmail(), u.getRole(), u.getDateEntree(), u.getProfession());
                     }
+
                 })
                 .toList();
     }
