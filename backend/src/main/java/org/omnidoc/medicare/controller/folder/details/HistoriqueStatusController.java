@@ -1,5 +1,7 @@
 package org.omnidoc.medicare.controller.folder.details;
 
+import lombok.RequiredArgsConstructor;
+import org.omnidoc.medicare.entity.folder.details.HistoriqueStatus;
 import org.omnidoc.medicare.enums.Status;
 import org.omnidoc.medicare.service.details.HistoriqueStatusService;
 import org.springframework.http.HttpStatus;
@@ -46,4 +48,17 @@ public class HistoriqueStatusController {
     ) throws Exception {
         return historiqueStatusService.addSignatureAndCertificate(signature, certificateFile,patientId);
     }
+    @PostMapping("/latest/{patientId}")
+    public ResponseEntity<HistoriqueStatus> getLatestStatus(
+            @PathVariable Long patientId,
+            @RequestHeader("Authorization") String jwt
+    ) {
+        HistoriqueStatus latestStatus = historiqueStatusService.getLatestStatusByPatientAndMedecin(patientId, jwt);
+        if (latestStatus != null) {
+            return ResponseEntity.ok(latestStatus);
+        } else {
+            return ResponseEntity.noContent().build();
+        }
+    }
+
 }

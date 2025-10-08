@@ -17,5 +17,15 @@ public interface HistoriqueStatusRepo extends JpaRepository<HistoriqueStatus, Lo
 
     @Query("SELECT hs FROM HistoriqueStatus hs WHERE hs.patient.id = :patientId ORDER BY hs.date DESC LIMIT 1")
     Optional<HistoriqueStatus> findLatestRdvByPatientEmail(@Param("patientId") Long patientId);
+    // Latest status with comment
+    Optional<HistoriqueStatus> findTopByPatientIdAndMedecin_User_EmailAndCommentIsNotNullOrderByDateDesc(
+            Long patientId, String medecinEmail
+    );
 
+    // Latest status (already exists)
+    Optional<HistoriqueStatus> findTopByPatientIdAndMedecin_User_EmailOrderByDateDesc(
+            Long patientId, String medecinEmail
+    );
+
+    List<HistoriqueStatus> findByPatientIdAndMedecin_User_EmailOrderByDateDesc(Long patientId, String medecinUserEmail);
 }

@@ -311,6 +311,11 @@ export default function PatientTab() {
         params: { patientId: patient.user.id, email, period: nextRdv },
       });
       const formattedNextRdv = formatDate(responseNextRdv.data.date);
+      const { data } = await instance.post(
+        `/api/historique-status/latest/${patient.user.id}`
+      );
+
+      const comment = data?.comment;
 
       const blob = await pdf(
         <CertificatePDF
@@ -327,6 +332,7 @@ export default function PatientTab() {
           dateEntree={formattedDateEntree}
           profession={patient.user.profession}
           nextRdv={formattedNextRdv}
+          comment={comment}
         />
       ).toBlob();
       const formData = new FormData();

@@ -104,6 +104,7 @@ const CertificatePDF = ({
   profession,
   signature,
   nextRdv,
+  comment,
 }) => {
   const now = new Date();
   const formattedDate = now.toDateString("fr-FR");
@@ -163,6 +164,11 @@ const CertificatePDF = ({
           </Text>
           .
         </Text>
+        {comment && (
+          <View style={styles.footer}>
+            <Text>{comment}</Text>
+          </View>
+        )}
 
         <View style={styles.footer}>
           <Text>Date prochaine visite le: {nextRdv}</Text>

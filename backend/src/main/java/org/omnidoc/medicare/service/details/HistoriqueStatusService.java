@@ -22,6 +22,7 @@ import java.sql.Blob;
 import java.sql.SQLException;
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 import static org.omnidoc.medicare.utils.Util.encryptIfNotNull;
 
@@ -58,6 +59,30 @@ public class HistoriqueStatusService {
         historiqueStatus.setComment(comment);
 
         historiqueStatusRepo.save(historiqueStatus);
+    }
+    public HistoriqueStatus getLatestStatusByPatientAndMedecin(Long patientId, String jwt) {
+        try {
+            // 🔐 Extract username from JWT
+            String token = jwt.substring(7);
+            String username = jwtService.extractUsername(token);
+
+            List<HistoriqueStatus> allStatuses = historiqueStatusRepo
+                    .findByPatientIdAndMedecin_User_EmailOrderByDateDesc(patientId, username);
+
+            Optional<HistoriqueStatus> withComment = allStatuses.stream()
+                    .filter(hs -> hs.getComment() != null && !hs.getComment().isEmpty())
+                    .findFirst();
+
+            if (withComment.isPresent()) {
+                return withComment.get();
+            }
+
+            return allStatuses.isEmpty() ? null : allStatuses.get(0);
+
+        } catch (Exception e) {
+            System.out.println("Error fetching latest status: " + e.getMessage());
+            return null;
+        }
     }
 
 
