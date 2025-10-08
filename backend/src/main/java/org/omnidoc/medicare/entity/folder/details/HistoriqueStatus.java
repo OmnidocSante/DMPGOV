@@ -48,4 +48,7 @@ public class HistoriqueStatus {
     @Lob
     private Blob certificate;
 
+    private String comment;
+
+
 }

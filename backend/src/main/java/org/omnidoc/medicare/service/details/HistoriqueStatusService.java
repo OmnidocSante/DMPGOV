@@ -33,27 +33,33 @@ public class HistoriqueStatusService {
     private final PatientRepo patientRepo;
     private final MedecinRepo medecinRepo;
     private final HistoriqueStatusRepo historiqueStatusRepo;
+    private final HistoriqueService historiqueService;
 
-    public HistoriqueStatusService(JwtService jwtService, PatientRepo patientRepo, MedecinRepo medecinRepo, HistoriqueStatusRepo historiqueStatusRepo) {
+    public HistoriqueStatusService(JwtService jwtService, PatientRepo patientRepo, MedecinRepo medecinRepo, HistoriqueStatusRepo historiqueStatusRepo, HistoriqueService historiqueService) {
         this.jwtService = jwtService;
         this.patientRepo = patientRepo;
         this.medecinRepo = medecinRepo;
         this.historiqueStatusRepo = historiqueStatusRepo;
+        this.historiqueService = historiqueService;
     }
-
-    public void addStatus(Status status, Long jockeyId, String jwt) throws Exception {
+    public void addStatus(Status status, Long patientId, String jwt, String comment) throws Exception {
         String token = jwt.substring(7);
-        String username = jwtService
-                .extractUsername(token);
-        Patient patient = patientRepo.findById(jockeyId).orElseThrow(() -> new ApiException("jockey not found"));
-        Medecin medecin = medecinRepo.findByUser_Email((username)).orElseThrow(() -> new ApiException("Doctor not found"));
+        String username = jwtService.extractUsername(token);
+
+        Patient patient = patientRepo.findById(patientId)
+                .orElseThrow(() -> new ApiException("Patient not found"));
+        Medecin medecin = medecinRepo.findByUser_Email(username)
+                .orElseThrow(() -> new ApiException("Doctor not found"));
+
         HistoriqueStatus historiqueStatus = new HistoriqueStatus();
         historiqueStatus.setPatient(patient);
         historiqueStatus.setMedecin(medecin);
         historiqueStatus.setStatus(encryptIfNotNull(status.name()));
-        historiqueStatusRepo.save(historiqueStatus);
+        historiqueStatus.setComment(comment);
 
+        historiqueStatusRepo.save(historiqueStatus);
     }
+
 
     public List<HistoriqueStatusRecord> getStatus(Long jockeyId) {
         List<HistoriqueStatus> historiqueStatuses = historiqueStatusRepo.findHistoriqueStatusesByPatient_User_Id(jockeyId);
@@ -77,7 +83,8 @@ public class HistoriqueStatusService {
                         patientNom,
                         patientPrenom,
                         historiqueStatus.getDate(),
-                        Util.decryptIfNotNull(historiqueStatus.getStatus())
+                        Util.decryptIfNotNull(historiqueStatus.getStatus()),
+                        historiqueStatus.getComment()
                 );
             } catch (Exception e) {
                 throw new RuntimeException(e);
@@ -87,7 +94,7 @@ public class HistoriqueStatusService {
 
 
     public record HistoriqueStatusRecord(String doctorName, String doctorLastName, String patientName,
-                                         String patientLastName, LocalDateTime date, String status) {
+                                         String patientLastName, LocalDateTime date, String status, String comment) {
     }
 
     public ResponseEntity<byte[]> addSignatureAndCertificate(String signature, MultipartFile certificateFile, Long patientId) throws Exception {

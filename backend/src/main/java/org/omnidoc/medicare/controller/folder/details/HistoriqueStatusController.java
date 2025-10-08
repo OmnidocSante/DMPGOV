@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.HashMap;
 import java.util.List;
 
 @RestController
@@ -23,9 +24,11 @@ public class HistoriqueStatusController {
     public ResponseEntity<Void> addStatus(
             @PathVariable Long patientId,
             @RequestParam Status status,
-            @RequestHeader("Authorization") String jwt
+            @RequestHeader("Authorization") String jwt,
+            @RequestBody(required = false) HashMap<String, String> body
     ) throws Exception {
-        historiqueStatusService.addStatus(status, patientId, jwt);
+        String comment = (body != null) ? body.get("comment") : null;
+        historiqueStatusService.addStatus(status, patientId, jwt, comment);
         return new ResponseEntity<>(HttpStatus.CREATED);
     }
 

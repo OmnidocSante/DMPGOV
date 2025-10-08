@@ -62,6 +62,7 @@ export default function PatientTab() {
 
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [status, setStatus] = useState();
+  const [comment, setComment] = useState();
   const [rdv, setRdv] = useState(null);
 
   const detailsSchema = z.object({
@@ -238,7 +239,7 @@ export default function PatientTab() {
       await Promise.all([
         instance.patch(`/api/patient/${id}/status?status=${status}`),
         instance.post(`/api/historique-status/${id}?status=${status}`, {
-          status,
+          comment,
         }),
       ]);
 
@@ -544,6 +545,22 @@ export default function PatientTab() {
                                 </option>
                               ))}
                             </select>
+                          </div>
+                          {/* Commentaire */}
+                          <div className="flex flex-col gap-1">
+                            <label
+                              className="text-sm font-medium text-bay-of-many-600"
+                              htmlFor="commentaire"
+                            >
+                              Commentaire
+                            </label>
+                            <textarea
+                              id="commentaire"
+                              placeholder="Ex: Patient en bon état général, à revoir dans 3 mois..."
+                              rows={4}
+                              className="border border-bay-of-many-400 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-bay-of-many-600 resize-none"
+                              onChange={(e) => setComment(e.target.value)}
+                            />
                           </div>
                         </div>
                       </DialogHeader>

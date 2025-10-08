@@ -614,10 +614,12 @@ export default function AdminDashboard() {
 
   const handleCreateUser = async () => {
     setDisabled(true);
+    console.log("editForm", editForm);
 
     if (!validateForm()) {
       return;
     }
+
     const success = await createUser(editForm);
     if (success) {
       setShowCreateModal(false);
@@ -1028,6 +1030,7 @@ export default function AdminDashboard() {
       </div>
     );
   };
+  console.log("users", users);
 
   const renderUserManagement = () => {
     return (
@@ -1855,7 +1858,7 @@ export default function AdminDashboard() {
               </h3>
 
               <p className="text-sm text-gray-600 mt-1">
-                Showing status history for {selectedPatient?.prénom}{" "}
+                Afficher l’historique des statuts de {selectedPatient?.prénom}{" "}
                 {selectedPatient?.nom}
               </p>
             </div>
@@ -1893,6 +1896,9 @@ export default function AdminDashboard() {
                       </th>
                       <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                         Statut
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Commentaire
                       </th>
                     </tr>
                   </thead>
@@ -1938,6 +1944,11 @@ export default function AdminDashboard() {
                           >
                             {record.status}
                           </span>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          <div className="text-sm font-medium text-gray-900">
+                            {record.comment}
+                          </div>
                         </td>
                       </tr>
                     ))}
